@@ -31,4 +31,4 @@ or: (to be deprecated)
 
 #### On env vars
 
-DIZZY_DATA_ROOT to set your data root (default: `~/.dizzy`)
+Use DIZZY_DATA_ROOT to set your data root, which will be populated with /default_data if no `settings.yml` is found. (if not set, will look in ~/.dizzy for settings.yml or use /default_data)

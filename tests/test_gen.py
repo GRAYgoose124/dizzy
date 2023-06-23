@@ -3,7 +3,7 @@ import shutil
 import pytest
 import time
 
-from dizzy.daemon.gen import generate_data_dir, generate_skeleton_task
+from dizzy.daemon.data_gen import generate_data_dir, generate_skeleton_task
 
 
 class TestGen:

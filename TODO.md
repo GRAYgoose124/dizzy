@@ -23,5 +23,7 @@
   - maybe we define task just like entity and service, and have it find a raw function in python, or add the code to the yaml file.
 
 - run() wrapper to make workflow and contexts transparent to task code
+- [ ] client and server folders? gettin phat.
 # BUGS
 - Annoyingly, only dizae server/client logs right now. For  some reason logfiles don't work at the right levels either.
+

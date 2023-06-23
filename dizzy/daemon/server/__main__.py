@@ -3,14 +3,14 @@ import logging
 import zmq
 
 from dizzy import EntityManager
-from .settings import data_root
+from ..settings import data_root
 
 
 logger = logging.getLogger(__name__)
 
 
 class DaemonEntityManager(EntityManager):
-    from .settings import common_services, default_entities
+    from ..settings import common_services, default_entities
 
     def __init__(self):
         super().__init__()
@@ -76,6 +76,7 @@ class SimpleRequestServer:
             ctx = self.entity_manager.get_entity(entity).run_workflow(workflow)
         except KeyError as e:
             response["errors"].append(f"No such workflow: {e}")
+            ctx = None
 
         # response["ctx"] = ctx
         response["ctx"] = request.get("ctx", {})
@@ -85,7 +86,7 @@ class SimpleRequestServer:
         response["status"] = (
             "completed" if len(response["errors"]) == 0 else "finished_with_errors"
         )
-        response["result"] = ctx["workflow"]["result"]
+        response["result"] = ctx["workflow"]["result"] if ctx else None
 
     def handle_service_task(self, request, response):
         service = request["service"]
