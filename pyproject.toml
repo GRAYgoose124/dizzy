@@ -5,6 +5,10 @@ description = ""
 authors = ["Grayson Miller <grayson.miller124@gmail.com>"]
 readme = "README.md"
 
+include = [
+    { path = "default_data", format = ["sdist"] }
+]
+
 [tool.poetry.dependencies]
 python = "^3.9"
 pyyaml = "^6.0"
@@ -24,6 +28,3 @@ dizae = "dizzy.daemon.__main__:main"
 dizgen = "dizzy.daemon.gen:main"
 dizzy-server = "dizzy.daemon.__main__:server"
 dizzy-client = "dizzy.daemon.__main__:client"
-
-[build]
-include = ["data/**"]

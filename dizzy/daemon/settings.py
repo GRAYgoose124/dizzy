@@ -1,5 +1,7 @@
+import os
 from pathlib import Path
 from dataclasses import dataclass, fields
+import shutil
 import yaml
 import logging
 
@@ -30,13 +32,32 @@ class SettingsManager:
         if cls._instance is None:
             cls._instance = super(SettingsManager, cls).__new__(cls)
 
+        # TODO: Probably should do this another way, but it works for now.
+        # Get from DIZZY_DATA_ROOT, ~/.dizzy, or packaged default_data.
+        env_var = os.getenv("DIZZY_DATA_ROOT")
+        env_root = Path(env_var) if env_var else None
+        home_root = Path("~/.dizzy")
+        packaged_root = Path(__file__).parent.parent / "default_data"
+
+        if env_var and not (env_root / "settings.yml").exists():
+            shutil.copytree(packaged_root, env_root, dirs_exist_ok=True)
+
+        cls._instance.data_root = (
+            env_root
+            if env_var and env_root.exists()
+            else home_root
+            if home_root.exists()
+            else packaged_root
+        )
+
         return cls._instance
 
-    def load_settings(self) -> Settings:
-        data_root = Path(__file__).parent.parent.parent / "data"
-        daemon_settings_file = data_root / "settings.yml"
-        common_service_dir = data_root / "common_services"
-        entities_dir = data_root / "entities"
+    def load_settings(
+        self,
+    ) -> Settings:
+        daemon_settings_file = self.data_root / "settings.yml"
+        common_service_dir = self.data_root / "common_services"
+        entities_dir = self.data_root / "entities"
 
         with open(daemon_settings_file, "r") as f:
             settings = yaml.safe_load(f)["settings"]
@@ -71,7 +92,7 @@ class SettingsManager:
         }
 
         self.settings = Settings(
-            data_root,
+            self.data_root,
             all_common_services,
             all_entities,
             common_services,

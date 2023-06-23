@@ -28,3 +28,7 @@ or: (to be deprecated)
 
     > dizzy-server >/dev/null &
     > dizzy-client
+
+#### On env vars
+
+DIZZY_DATA_ROOT to set your data root (default: `~/.dizzy`)
