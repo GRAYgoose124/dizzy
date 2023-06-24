@@ -3,7 +3,7 @@ import logging
 import zmq
 
 from dizzy import EntityManager
-from ..settings import data_root
+from ..settings import SettingsManager
 
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,8 @@ class DaemonEntityManager(EntityManager):
 
 
 class SimpleRequestServer:
+    SettingsManager(write_to_disk=True).inject(globals())
+
     def __init__(self, address="*", port=5555):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REP)

@@ -28,7 +28,7 @@ class SettingsManager:
     settings: Settings
     meta: MetaSettings
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, write_to_disk=False, **kwargs):
         if cls._instance is None:
             cls._instance = super(SettingsManager, cls).__new__(cls)
 
@@ -39,7 +39,7 @@ class SettingsManager:
         home_root = Path("~/.dizzy")
         packaged_root = Path(__file__).parent.parent / "default_data"
 
-        if env_var and not (env_root / "settings.yml").exists():
+        if env_var and not (env_root / "settings.yml").exists() and write_to_disk:
             shutil.copytree(packaged_root, env_root, dirs_exist_ok=True)
 
         cls._instance.data_root = (
