@@ -31,6 +31,9 @@ class TestServiceManager:
         self.man.run_tasklist(tasklist, ctx)
         assert ctx == {"A": "A", "B": "AB", "C": "C"}
 
+    def test_requested_actions(self):
+        self.man.possible_actions == ["service_info"]
+
 
 class TestService:
     def setup_method(self):
@@ -49,3 +52,16 @@ class TestService:
         assert self.test_path.exists()
         assert test_S.name == "uno"
         assert not hasattr(test_S, "__task_root")
+
+    def test_requested_actions(self):
+        assert self.service.get_task("D").requested_actions == [
+            "entity_info",
+            "service_info",
+        ]
+        ctx = {}
+
+        self.service.get_task("D").run(ctx)
+
+        assert "entity_info" in ctx
+        assert "service_info" in ctx
+        print(ctx)

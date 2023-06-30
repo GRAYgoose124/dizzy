@@ -38,11 +38,33 @@ class ActionDataclassMixin:
         self.__registered_actions__ = value
 
     def register_action(self, name: str, argstr: str, action: callable):
+        if not callable(action):
+            raise TypeError(f"Action {name} is not callable")
+
+        if name in self.registered_actions:
+            # raise ValueError(f"Action {name} already registered")
+            # TODO: save a list of actions that were overwritten to check against
+            logger.warning(
+                f"Action {name} already registered, overwriting: {self.registered_actions[name]}"
+            )
+
         self.registered_actions[name] = (argstr, action)
+        logger.debug(f"Registered action {name} with argstr {argstr} for {super()}")
 
     def get_action(self, name: str) -> tuple[str, callable]:
-        return (name, *self.registered_actions.get(name, (None, None)))
+        return self.registered_actions.get(name, (None, None))
 
+    def try_run_action(self, name: str, *args, **kwargs):
+        action = self.get_action(name)[1]
+        if callable(action):
+            logger.debug(f"Running action {name} for {self.__class__.__name__}")
+            return action(*args, **kwargs)
+        else:
+            return (
+                f"Action {name} not found. available actions: {self.possible_actions}"
+            )
+
+    @property
     def possible_actions(self) -> list[str]:
         return list(self.registered_actions.keys())
 
@@ -52,6 +74,7 @@ class Task(ABC, ActionDataclassMixin):
     name: Optional[str] = None
     description: Optional[str] = None
     dependencies: Optional[list[str]] = field(default_factory=list)
+    requested_actions: Optional[list[str]] = field(default_factory=list)
 
     def __post_init__(self):
         if self.name is None:
@@ -92,11 +115,26 @@ class Service(ActionDataclassMixin):
                     obj.name = obj.__name__
                     obj.description = obj.__doc__
 
+                    # This really isn't great, basically when we instantiate a Task, it loses it's default list.
+                    dependencies = None
+                    if hasattr(obj, "dependencies"):
+                        dependencies = obj.dependencies.copy()
+                    requested_actions = None
+                    if hasattr(obj, "requested_actions"):
+                        requested_actions = obj.requested_actions.copy()
+
+                    obj = obj()
+
+                    if dependencies is not None:
+                        setattr(obj, "dependencies", dependencies)
+                    if requested_actions is not None:
+                        setattr(obj, "requested_actions", requested_actions)
+
                     if hasattr(obj, "requested_actions"):
                         for action in obj.requested_actions:
                             a = self.get_action(action)
-                            if a:
-                                obj.register_action(a[0], a[1][0], a[1][1])
+                            if callable(a[1]):
+                                obj.register_action(action, *a)
 
                     self.__loaded_tasks[name] = obj
 
@@ -159,8 +197,8 @@ class ServiceManager(ActionDataclassMixin):
                 if hasattr(task, "requested_actions"):
                     for action in task.requested_actions:
                         a = self.get_action(action)
-                        if a:
-                            task.register_action(a[0], a[1][0], a[1][1])
+                        if callable(a[1]):
+                            task.register_action(action, *a)
 
         logger.debug(f"SM: Loaded services {self.services}.")
 
@@ -195,11 +233,15 @@ class ServiceManager(ActionDataclassMixin):
         t = self.find_task(task)
 
         if not t or t is None:
-            raise ValueError(f"Task {task} not found")
+            return []
 
         tasks = []
 
-        if "dependencies" not in t.__dict__ or not t.dependencies:
+        if (
+            not hasattr(t, "dependencies")
+            or t.dependencies is None
+            or len(t.dependencies) == 0
+        ):
             return [t]
 
         for dep in t.dependencies:
@@ -215,10 +257,7 @@ class ServiceManager(ActionDataclassMixin):
         results = []
         for task in tasklist:
             logger.debug(f"-- Running task {task.name}, {ctx=}")
-            if hasattr(task, "__needs_manager__") and task.__needs_manager__:
-                results.append(task.run(ctx, self))
-            else:
-                results.append(task.run(ctx))
+            results.append(task.run(ctx))
 
         logger.debug(f"- Tasklist results: {results=}")
         return results[-1] if len(results) > 0 else None

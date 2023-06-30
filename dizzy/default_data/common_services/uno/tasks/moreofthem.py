@@ -16,7 +16,12 @@ class D(Task):
     name = "D"
     description = "D task"
 
-    @staticmethod
-    def run(ctx):
+    requested_actions = ["entity_info", "service_info"]
+
+    def run(self, ctx):
         ctx["D"] = "D"
+        ctx["entity_info"] = self.try_run_action("entity_info")
+        ctx["service_info"] = self.try_run_action("service_info")
+
+        print(ctx)
         return "D"

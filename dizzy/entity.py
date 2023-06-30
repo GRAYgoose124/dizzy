@@ -42,8 +42,8 @@ class Entity(ActionDataclassMixin):
                     if hasattr(task, "requested_actions"):
                         for action in task.requested_actions:
                             a = E.get_action(action)
-                            if a:
-                                task.register_action(a[0], a[1][0], a[1][1])
+                            if callable(a[1]):
+                                task.register_action(action, *a)
 
             logger.debug(f"Loaded entity {E.name}")
             return E
@@ -136,14 +136,21 @@ class EntityManager(ActionDataclassMixin):
                     if hasattr(task, "requested_actions"):
                         for action in task.requested_actions:
                             a = self.get_action(action)
-                            if a:
-                                task.register_action(a[0], a[1][0], a[1][1])
+                            if callable(a[1]):
+                                task.register_action(action, *a)
 
         logger.debug(f"Loaded entities {self.entities.keys()}")
 
     def get_entity(self, entity: str) -> Optional[Entity]:
         if entity in self.entities:
             return self.entities[entity]
+        return None
+
+    def find_task(self, task: str) -> Optional[tuple[str, str]]:
+        for entity in self.entities.values():
+            for service in entity.service_manager.services.values():
+                if task in service.tasks:
+                    return service.get_task(task)
         return None
 
     def get_entities(self) -> list[Entity]:
