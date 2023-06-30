@@ -43,7 +43,7 @@ class Entity(ActionDataclassMixin):
                         for action in task.requested_actions:
                             a = E.get_action(action)
                             if a:
-                                task.register_action(a.name, a.argstr, a.callback)
+                                task.register_action(a[0], a[1][0], a[1][1])
 
             logger.debug(f"Loaded entity {E.name}")
             return E
@@ -137,7 +137,7 @@ class EntityManager(ActionDataclassMixin):
                         for action in task.requested_actions:
                             a = self.get_action(action)
                             if a:
-                                task.register_action(a.name, a.argstr, a.callback)
+                                task.register_action(a[0], a[1][0], a[1][1])
 
         logger.debug(f"Loaded entities {self.entities.keys()}")
 

@@ -96,7 +96,7 @@ class Service(ActionDataclassMixin):
                         for action in obj.requested_actions:
                             a = self.get_action(action)
                             if a:
-                                obj.register_action(a.name, a.argstr, a.callback)
+                                obj.register_action(a[0], a[1][0], a[1][1])
 
                     self.__loaded_tasks[name] = obj
 
@@ -160,7 +160,7 @@ class ServiceManager(ActionDataclassMixin):
                     for action in task.requested_actions:
                         a = self.get_action(action)
                         if a:
-                            task.register_action(a.name, a.argstr, a.callback)
+                            task.register_action(a[0], a[1][0], a[1][1])
 
         logger.debug(f"SM: Loaded services {self.services}.")
 
