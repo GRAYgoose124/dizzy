@@ -16,7 +16,6 @@ class DizzyClient:
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
 
-        # part of dazzle API
         self.socket.connect(f"tcp://{address}:{port}")
 
     def request_workflow(self, entity: str = "einz", workflow: str = "einzy"):

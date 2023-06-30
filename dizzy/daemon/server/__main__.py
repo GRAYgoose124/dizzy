@@ -113,5 +113,8 @@ class SimpleRequestServer:
             result = self.entity_manager.service_manager.run_task(task, ctx)
             response["result"] = result
             response["ctx"] = ctx
+            response["status"] = (
+                "completed" if len(response["errors"]) == 0 else "finished_with_errors"
+            )
         except Exception as e:
             response["errors"].append(f"Error running task: {e}")

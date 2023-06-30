@@ -22,8 +22,33 @@ def load_module(path: Path) -> object:
     return module
 
 
+class ActionDataclassMixin:
+    def __init__(self):
+        self.__registered_actions__: dict[str, tuple[str, callable]] = {}
+
+    @property
+    def registered_actions(self) -> dict[str, tuple[str, callable]]:
+        if not hasattr(self, "__registered_actions__"):
+            self.__registered_actions__ = {}
+
+        return self.__registered_actions__
+
+    @registered_actions.setter
+    def registered_actions(self, value: tuple[str, callable]):
+        self.__registered_actions__ = value
+
+    def register_action(self, name: str, argstr: str, action: callable):
+        self.registered_actions[name] = (argstr, action)
+
+    def get_action(self, name: str) -> tuple[str, callable]:
+        return (name, *self.registered_actions.get(name, (None, None)))
+
+    def possible_actions(self) -> list[str]:
+        return list(self.registered_actions.keys())
+
+
 @dataclass
-class Task(ABC):
+class Task(ABC, ActionDataclassMixin):
     name: Optional[str] = None
     description: Optional[str] = None
     dependencies: Optional[list[str]] = field(default_factory=list)
@@ -39,9 +64,12 @@ class Task(ABC):
     def run(self, *args, **kwargs):
         pass
 
+    def __call__(self, *args, **kwargs):
+        return self.run(*args, **kwargs)
+
 
 @dataclass
-class Service:
+class Service(ActionDataclassMixin):
     name: str
     description: str
 
@@ -63,6 +91,13 @@ class Service:
                     logger.debug(f"[{self.name}] Loading task {name} from {task}")
                     obj.name = obj.__name__
                     obj.description = obj.__doc__
+
+                    if hasattr(obj, "requested_actions"):
+                        for action in obj.requested_actions:
+                            a = self.get_action(action)
+                            if a:
+                                obj.register_action(a.name, a.argstr, a.callback)
+
                     self.__loaded_tasks[name] = obj
 
     @staticmethod
@@ -101,15 +136,32 @@ class Service:
         return list(self.__loaded_tasks.keys())
 
 
-class ServiceManager:
+class ServiceManager(ActionDataclassMixin):
     def __init__(self):
+        super(ActionDataclassMixin, self).__init__()
+
         self.services = {}
+
         logger.debug(f"Created new service manager {self}")
+
+        self.__post_init__()
+
+    def __post_init__(self):
+        self.register_action("service_info", "", self.get_services)
 
     def load_services(self, services: list[Path]):
         for service in services:
             S = Service.load_from_yaml(service)
             self.services[S.name] = S
+
+            # All tasks need to register any actions the service manager offers
+            for task in S.get_tasks():
+                if hasattr(task, "requested_actions"):
+                    for action in task.requested_actions:
+                        a = self.get_action(action)
+                        if a:
+                            task.register_action(a.name, a.argstr, a.callback)
+
         logger.debug(f"SM: Loaded services {self.services}.")
 
     def find_owner_service(self, task: str) -> Optional[Service]:
@@ -163,7 +215,10 @@ class ServiceManager:
         results = []
         for task in tasklist:
             logger.debug(f"-- Running task {task.name}, {ctx=}")
-            results.append(task.run(ctx))
+            if hasattr(task, "__needs_manager__") and task.__needs_manager__:
+                results.append(task.run(ctx, self))
+            else:
+                results.append(task.run(ctx))
 
         logger.debug(f"- Tasklist results: {results=}")
         return results[-1] if len(results) > 0 else None

@@ -6,12 +6,13 @@ from typing import Optional
 import yaml
 
 from . import ServiceManager
+from .service import ActionDataclassMixin
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class Entity:
+class Entity(ActionDataclassMixin):
     """Base class for all entities.
 
     An entity is... A decoupled set of services and workflows that can be deployed.
@@ -34,6 +35,16 @@ class Entity:
             E.__services_root = entity.parent / "services"
 
             E.service_manager.load_services(E.get_service_files())
+
+            # All tasks need to register any actions the Entity offers
+            for service in E.service_manager.services.values():
+                for task in service.get_tasks():
+                    if hasattr(task, "requested_actions"):
+                        for action in task.requested_actions:
+                            a = E.get_action(action)
+                            if a:
+                                task.register_action(a.name, a.argstr, a.callback)
+
             logger.debug(f"Loaded entity {E.name}")
             return E
 
@@ -85,18 +96,26 @@ class Entity:
         return ctx
 
 
-class EntityManager:
+class EntityManager(ActionDataclassMixin):
     def __init__(self, service_manager: ServiceManager = None):
+        super(ActionDataclassMixin, self).__init__()
+
         self.entities = {}
-        self.__main_service_manager = service_manager or ServiceManager()
+        self.__common_service_manager = service_manager or ServiceManager()
+
         logger.debug(f"Created new entity manager {self}")
+
+        self.__post_init__()
+
+    def __post_init__(self):
+        self.register_action("entity_info", "", self.get_entities)
 
     @property
     def service_manager(self) -> ServiceManager:
-        if self.__main_service_manager is None:
-            self.__main_service_manager = ServiceManager()
-            logger.debug(f"Created new service manager {self.__main_service_manager}")
-        return self.__main_service_manager
+        if self.__common_service_manager is None:
+            self.__common_service_manager = ServiceManager()
+            logger.debug(f"Created new service manager {self.__common_service_manager}")
+        return self.__common_service_manager
 
     def load_entities(self, entities: list[Path]):
         for entity in entities:
@@ -110,6 +129,15 @@ class EntityManager:
                     E.service_manager.services[service] = self.service_manager.services[
                         service
                     ]
+
+            # all tasks need to register any actions the Entity Manager offers
+            for service in E.service_manager.services.values():
+                for task in service.get_tasks():
+                    if hasattr(task, "requested_actions"):
+                        for action in task.requested_actions:
+                            a = self.get_action(action)
+                            if a:
+                                task.register_action(a.name, a.argstr, a.callback)
 
         logger.debug(f"Loaded entities {self.entities.keys()}")
 
