@@ -28,7 +28,9 @@ class SettingsManager:
     settings: Settings
     meta: MetaSettings
 
-    def __new__(cls, *args, write_to_disk=False, **kwargs):
+    def __new__(
+        cls, *args, write_to_disk=False, force_use_default_data=False, **kwargs
+    ):
         if cls._instance is None:
             cls._instance = super(SettingsManager, cls).__new__(cls)
 
@@ -41,6 +43,8 @@ class SettingsManager:
 
         if env_var and not (env_root / "settings.yml").exists() and write_to_disk:
             shutil.copytree(packaged_root, env_root, dirs_exist_ok=True)
+        # if not (home_root / "settings.yml").exists() and write_to_disk:
+        #    shutil.copytree(packaged_root, home_root, dirs_exist_ok=True)
 
         cls._instance.data_root = (
             env_root
@@ -49,6 +53,9 @@ class SettingsManager:
             if home_root.exists()
             else packaged_root
         )
+
+        # if force_use_default_data:
+        #    cls._instance.data_root = packaged_root
 
         return cls._instance
 
@@ -138,4 +145,7 @@ class SettingsManager:
         globals["__all__"].extend(self.get_settings().__dict__.keys())
 
 
+# Basically, Anything in Settings can be accessed as if it were a global in settings... Ie settings.data_root.
+# If you pass something like SettingsManager(write_to_disk=True) it will allow copying of the default_data to ~/.dizzy.
+# If you pass something like SettingsManager(write_to_disk=True, force_use_default_data=True) it will use the default_data packaged with dizzy and write it wherever you specify.
 SettingsManager().inject(globals())

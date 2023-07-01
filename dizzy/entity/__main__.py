@@ -69,7 +69,11 @@ class Entity(ActionDataclassMixin):
             raise ValueError("No services root set")
 
         service_files = self.__services_root.glob(f"**/*.yml")
-        service_files = [f for f in service_files if f.parent.name in self.services]
+        service_files = [
+            f
+            for f in service_files
+            if f.parent.name in self.services or self.services == ["*"]
+        ]
 
         logger.debug(
             f"Found {self.name} service files {service_files} in {self.__services_root}"

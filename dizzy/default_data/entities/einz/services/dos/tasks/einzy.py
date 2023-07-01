@@ -21,6 +21,17 @@ class EinzyB(Task):
         return f"{ctx['EinzyA']}B"
 
 
+class EinzInfo(Task):
+    """Gets info about loaded services."""
+
+    dependencies = ["Info"]
+
+    def run(self, ctx):
+        ctx["EinzInfo"] = f"{ctx['Info']}"
+
+        return ctx["EinzInfo"]
+
+
 class NotUsed(Task):
     """Ignored"""
 

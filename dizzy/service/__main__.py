@@ -33,6 +33,7 @@ class Service(ActionDataclassMixin):
                     isinstance(obj, type)
                     and issubclass(obj, Task)
                     and name in self.tasks
+                    or self.tasks == ["*"]
                 ):
                     logger.debug(f"[{self.name}] Loading task {name} from {task}")
                     obj.name = obj.__name__

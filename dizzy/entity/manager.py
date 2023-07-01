@@ -24,6 +24,10 @@ class EntityManager(ActionDataclassMixin):
         self.register_action("entity_info", "", self.get_entities)
 
     @property
+    def sm(self) -> ServiceManager:
+        return self.service_manager
+
+    @property
     def service_manager(self) -> ServiceManager:
         if self.__common_service_manager is None:
             self.__common_service_manager = ServiceManager()
@@ -64,6 +68,26 @@ class EntityManager(ActionDataclassMixin):
             for service in entity.service_manager.services.values():
                 if task in service.tasks:
                     return service.get_task(task)
+        return None
+
+    def find_service(self, service: str) -> Optional[tuple[str, str]]:
+        for entity in self.entities.values():
+            if service in entity.service_manager.services:
+                return entity.service_manager.get_service(service)
+        return None
+
+    def find_owner_entity(self, task: str) -> Optional[Entity]:
+        for entity in self.entities.values():
+            for service in entity.service_manager.services.values():
+                if task in service.tasks:
+                    return entity
+        return None
+
+    def find_owner_service(self, task: str) -> Optional[tuple[str, str]]:
+        for entity in self.entities.values():
+            for service in entity.service_manager.services.values():
+                if task in service.tasks:
+                    return entity.service_manager.get_service(service)
         return None
 
     def get_entities(self) -> list[Entity]:
