@@ -18,6 +18,10 @@ class DizzyClient:
 
         self.socket.connect(f"tcp://{address}:{port}")
 
+    def stop(self):
+        self.socket.close()
+        self.context.term()
+
     def request_workflow(self, entity: str = "einz", workflow: str = "einzy"):
         self.socket.send_json({"entity": entity, "workflow": workflow})
         return json.loads(self.socket.recv().decode())

@@ -3,6 +3,7 @@ import json
 import logging
 import uuid
 import zmq
+import zmq.asyncio
 
 from dizzy import EntityManager
 from ..settings import SettingsManager
@@ -28,45 +29,31 @@ class DaemonEntityManager(EntityManager):
 
 class SimpleRequestServer:
     def __init__(self, address="*", port=5555):
-        self.context = zmq.Context()
+        self.context = zmq.asyncio.Context()
         self.frontend = self.context.socket(zmq.ROUTER)
         self.frontend.bind(f"tcp://{address}:{port}")
 
-        self.backend = self.context.socket(zmq.DEALER)
-
         self.entity_manager = DaemonEntityManager()
 
-    def run(self):
+    async def run(self):
         logger.debug("Server running...")
 
-        poller = zmq.Poller()
-        poller.register(self.frontend, zmq.POLLIN)
-        poller.register(self.backend, zmq.POLLIN)
-
-        while True:
+        self.running = True
+        while self.running != False:
             try:
-                sockets = dict(poller.poll())
-            except zmq.error.ZMQError:
+                [identity, _, message] = await self.frontend.recv_multipart()
+            except (zmq.error.ZMQError, asyncio.exceptions.CancelledError):
                 logger.debug("Server stopped.")
                 break
 
-            if self.frontend in sockets:
-                # Received a request from a client
-                identity, _, message = self.frontend.recv_multipart()
-
-                self.handle_request(identity, message)
-
-            if self.backend in sockets:
-                # Received a response from a service
-                identity, _, message = self.backend.recv_multipart()
-                self.frontend.send_multipart([identity, b"", message])
+            await self.handle_request(identity, message)
 
     def stop(self):
         self.frontend.close()
-        self.backend.close()
         self.context.term()
+        self.running = False
 
-    def handle_request(self, identity, message):
+    async def handle_request(self, identity, message):
         logger.debug(f"Received request: {message}")
 
         response = {
@@ -98,10 +85,8 @@ class SimpleRequestServer:
             self.entity_manager.load()
             response["info"].append("Reloading entities and services...")
 
-        logger.debug(f"Sending response: {response}")
-        self.frontend.send_multipart(
-            [identity, b"", bytes(json.dumps(response), "utf-8")]
-        )
+        response_data = json.dumps(response).encode("utf-8")
+        await self.frontend.send_multipart([identity, b"", response_data])
 
     def handle_entity_workflow(self, request, response):
         entity = request["entity"]

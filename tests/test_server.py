@@ -27,15 +27,25 @@ def start_server():
 class TestServer:
     def setup_method(self):
         self.server = Server(port=7777)
-        # start a server in a separate thread
-        self.server_thread = threading.Thread(target=self.server.run)
+
+        # start the async server in a separate thread
+        def async_server():
+            import asyncio
+
+            asyncio.run(self.server.run())
+
+        self.server_thread = threading.Thread(target=async_server)
         self.server_thread.start()
 
         self.client = DizzyClient(port=7777)
 
     def teardown_method(self):
+        self.client.stop()
         self.server.stop()
-        self.server_thread.join()
+        try:
+            self.server_thread.join()
+        except KeyboardInterrupt:
+            pass
 
     def test_server(self):
         response = self.client.request_task("uno", "A")
