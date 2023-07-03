@@ -34,6 +34,14 @@ class EntityManager(ActionDataclassMixin):
             logger.debug(f"Created new service manager {self.__common_service_manager}")
         return self.__common_service_manager
 
+    def reset(self):
+        self.entities = {}
+        self.service_manager.reset()
+
+    def load(self, services: dict, entities: dict):
+        self.sm.load_services(services.values())
+        self.load_entities(entities.values())
+
     def load_entities(self, entities: list[Path]):
         for entity in entities:
             E = Entity.load_from_yaml(entity)

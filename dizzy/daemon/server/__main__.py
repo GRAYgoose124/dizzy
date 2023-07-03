@@ -10,20 +10,21 @@ logger = logging.getLogger(__name__)
 
 
 class DaemonEntityManager(EntityManager):
-    from ..settings import common_services, default_entities
-
     def __init__(self):
         super().__init__()
 
-        self.service_manager.load_services(DaemonEntityManager.common_services.values())
-        self.load_entities(DaemonEntityManager.default_entities.values())
+        self.settings_manager = SettingsManager(write_to_disk=True)
+        self.load()
+
+    def load(self):
+        self.settings_manager.load_settings()
+        settings = self.settings_manager.settings
+        super().load(settings.common_services, settings.default_entities)
 
         logger.debug("DaemonEntityManager initialized.")
 
 
 class SimpleRequestServer:
-    SettingsManager(write_to_disk=True).inject(globals())
-
     def __init__(self, address="*", port=5555):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REP)
@@ -58,6 +59,15 @@ class SimpleRequestServer:
                 response["errors"].append("Invalid JSON")
 
             # out = json.dumps(response).encode()
+            if (
+                len(response["errors"]) != 0
+                or "reload" in request
+                and request["reload"]
+            ):
+                # Try to load entities (and services) again
+                self.entity_manager.load()
+                response["info"].append("Reloading entities and services...")
+
             logger.debug(f"Sending response: {response}")
             self.socket.send_json(response)
 
@@ -118,3 +128,7 @@ class SimpleRequestServer:
             )
         except Exception as e:
             response["errors"].append(f"Error running task: {e}")
+
+    def handle_query(self, request, response):
+        """"""
+        pass

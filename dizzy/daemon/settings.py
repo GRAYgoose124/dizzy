@@ -26,10 +26,15 @@ class MetaSettings:
 class SettingsManager:
     _instance = None
     settings: Settings
-    meta: MetaSettings
+    _meta: MetaSettings
 
     def __new__(
-        cls, *args, write_to_disk=False, force_use_default_data=False, **kwargs
+        cls,
+        *args,
+        write_to_disk=False,
+        live_reload=False,
+        force_use_default_data=False,
+        **kwargs
     ):
         if cls._instance is None:
             cls._instance = super(SettingsManager, cls).__new__(cls)
@@ -45,6 +50,8 @@ class SettingsManager:
             shutil.copytree(packaged_root, env_root, dirs_exist_ok=True)
         # if not (home_root / "settings.yml").exists() and write_to_disk:
         #    shutil.copytree(packaged_root, home_root, dirs_exist_ok=True)
+
+        cls._instance.live_reload = live_reload
 
         cls._instance.data_root = (
             env_root
@@ -67,9 +74,9 @@ class SettingsManager:
         entities_dir = self.data_root / "entities"
 
         with open(daemon_settings_file, "r") as f:
-            settings = yaml.safe_load(f)["settings"]
-            default_common_services = settings["common_services"]
-            default_entities = settings["entities"]
+            settings_from_yaml = yaml.safe_load(f)["settings"]
+            default_common_services = settings_from_yaml["common_services"]
+            default_entities = settings_from_yaml["entities"]
 
             _all_common_service_files = [
                 common_service_dir / s / "service.yml"
@@ -98,7 +105,7 @@ class SettingsManager:
             e: f for e, f in all_entities.items() if e in default_entities
         }
 
-        self.settings = Settings(
+        self._settings = Settings(
             self.data_root,
             all_common_services,
             all_entities,
@@ -106,17 +113,27 @@ class SettingsManager:
             default_entities,
         )
 
-        self.meta = MetaSettings(entities_dir, common_service_dir)
+        self._meta = MetaSettings(entities_dir, common_service_dir)
 
-    def get_settings(self):
-        if not hasattr(self, "settings") or not self.settings:
-            self.load_settings()
-        return self.settings
+    def reload_guard(self, func):
+        def wrapper(*args, **kwargs):
+            if self.live_reload:
+                self.load_settings()
+            return func(*args, **kwargs)
 
-    def get_meta_settings(self):
-        if not hasattr(self, "meta") or not self.meta:
+        return wrapper
+
+    @property
+    def settings(self):
+        if not hasattr(self, "_settings") or not self._settings or self.live_reload:
             self.load_settings()
-        return self.meta
+        return self._settings
+
+    @property
+    def meta(self):
+        if not hasattr(self, "_meta") or not self._meta or self.live_reload:
+            self.load_settings()
+        return self._meta
 
     @staticmethod
     def default():
@@ -131,18 +148,14 @@ class SettingsManager:
 
     def inject(self, globals):
         """Injects settings into the global namespace provided - pass `globals()`."""
-        # globals.update(self.get_settings().__dict__)
-        globals.update(
-            {
-                k: v
-                for k, v in self.get_settings().__dict__.items()
-                if k in [f.name for f in fields(Settings)]
-            }
-        )
+        for k in [f.name for f in fields(Settings)]:
+            if k in globals:
+                del globals[k]
+            globals[k] = getattr(self.settings, k)
 
         if "__all__" not in globals:
             globals["__all__"] = []
-        globals["__all__"].extend(self.get_settings().__dict__.keys())
+        globals["__all__"].extend(self.settings.__dict__.keys())
 
 
 # Basically, Anything in Settings can be accessed as if it were a global in settings... Ie settings.data_root.
