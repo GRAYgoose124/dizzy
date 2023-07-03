@@ -6,6 +6,10 @@
   - [ ] EntityManager
 
 # Features
+- [ ] Async
+  - [ ] Client
+  - [ ] Server
+  - [ ] Task Code
 - [ ] Composites: workflows on the fly with a simple DSL for result composition.
 - [ ] Datagen (Entities, service folders, task folders - all yml files, etc)
 - [ ] Project

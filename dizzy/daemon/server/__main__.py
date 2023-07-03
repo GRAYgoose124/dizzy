@@ -1,5 +1,7 @@
+import asyncio
 import json
 import logging
+import uuid
 import zmq
 
 from dizzy import EntityManager
@@ -27,28 +29,48 @@ class DaemonEntityManager(EntityManager):
 class SimpleRequestServer:
     def __init__(self, address="*", port=5555):
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REP)
-        self.socket.bind(f"tcp://{address}:{port}")
+        self.frontend = self.context.socket(zmq.ROUTER)
+        self.frontend.bind(f"tcp://{address}:{port}")
+
+        self.backend = self.context.socket(zmq.DEALER)
 
         self.entity_manager = DaemonEntityManager()
 
     def run(self):
         logger.debug("Server running...")
-        while not self.socket.closed:
+
+        poller = zmq.Poller()
+        poller.register(self.frontend, zmq.POLLIN)
+        poller.register(self.backend, zmq.POLLIN)
+
+        while True:
             try:
-                message = self.socket.recv()
-            except zmq.error.ContextTerminated:
+                sockets = dict(poller.poll())
+            except zmq.error.ZMQError:
+                logger.debug("Server stopped.")
                 break
-            self.handle_request(message)
+
+            if self.frontend in sockets:
+                # Received a request from a client
+                identity, _, message = self.frontend.recv_multipart()
+
+                self.handle_request(identity, message)
+
+            if self.backend in sockets:
+                # Received a response from a service
+                identity, _, message = self.backend.recv_multipart()
+                self.frontend.send_multipart([identity, b"", message])
 
     def stop(self):
-        self.socket.close()
+        self.frontend.close()
+        self.backend.close()
         self.context.term()
 
-    def handle_request(self, message):
+    def handle_request(self, identity, message):
         logger.debug(f"Received request: {message}")
 
         response = {
+            "id": uuid.uuid4().hex,
             "status": "incomplete",
             "errors": [],
             "info": [],
@@ -58,8 +80,12 @@ class SimpleRequestServer:
 
         try:
             request = json.loads(message)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, UnicodeDecodeError):
             response["errors"].append("Invalid JSON")
+            request = {}
+
+        if "id" in request:
+            response["id"] = request["id"]
 
         if "entity" in request and request["entity"] is not None:
             self.handle_entity_workflow(request, response)
@@ -68,14 +94,14 @@ class SimpleRequestServer:
         else:
             response["errors"].append("Invalid JSON")
 
-        # out = json.dumps(response).encode()
-        if len(response["errors"]) != 0 or "reload" in request and request["reload"]:
-            # Try to load entities (and services) again
+        if len(response["errors"]) != 0 or ("reload" in request and request["reload"]):
             self.entity_manager.load()
             response["info"].append("Reloading entities and services...")
 
         logger.debug(f"Sending response: {response}")
-        self.socket.send_json(response)
+        self.frontend.send_multipart(
+            [identity, b"", bytes(json.dumps(response), "utf-8")]
+        )
 
     def handle_entity_workflow(self, request, response):
         entity = request["entity"]
