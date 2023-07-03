@@ -115,14 +115,6 @@ class SettingsManager:
 
         self._meta = MetaSettings(entities_dir, common_service_dir)
 
-    def reload_guard(self, func):
-        def wrapper(*args, **kwargs):
-            if self.live_reload:
-                self.load_settings()
-            return func(*args, **kwargs)
-
-        return wrapper
-
     @property
     def settings(self):
         if not hasattr(self, "_settings") or not self._settings or self.live_reload:
