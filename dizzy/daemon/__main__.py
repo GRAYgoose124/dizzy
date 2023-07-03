@@ -16,7 +16,7 @@ def server(port=5555):
         sys.exit(1)
 
     try:
-        server.run()
+        server.handle_request()
     except KeyboardInterrupt:
         print("Server stopped.")
 

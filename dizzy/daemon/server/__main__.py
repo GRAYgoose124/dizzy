@@ -34,42 +34,48 @@ class SimpleRequestServer:
 
     def run(self):
         logger.debug("Server running...")
-        while True:
-            message = self.socket.recv()
-            logger.debug(f"Received request: {message}")
-
-            response = {
-                "status": "incomplete",
-                "errors": [],
-                "info": [],
-                "result": None,
-                "ctx": None,
-            }
-
+        while not self.socket.closed:
             try:
-                request = json.loads(message)
-            except json.JSONDecodeError:
-                response["errors"].append("Invalid JSON")
+                message = self.socket.recv()
+            except zmq.error.ContextTerminated:
+                break
+            self.handle_request(message)
 
-            if "entity" in request and request["entity"] is not None:
-                self.handle_entity_workflow(request, response)
-            elif "service" in request and request["service"] is not None:
-                self.handle_service_task(request, response)
-            else:
-                response["errors"].append("Invalid JSON")
+    def stop(self):
+        self.socket.close()
+        self.context.term()
 
-            # out = json.dumps(response).encode()
-            if (
-                len(response["errors"]) != 0
-                or "reload" in request
-                and request["reload"]
-            ):
-                # Try to load entities (and services) again
-                self.entity_manager.load()
-                response["info"].append("Reloading entities and services...")
+    def handle_request(self, message):
+        logger.debug(f"Received request: {message}")
 
-            logger.debug(f"Sending response: {response}")
-            self.socket.send_json(response)
+        response = {
+            "status": "incomplete",
+            "errors": [],
+            "info": [],
+            "result": None,
+            "ctx": None,
+        }
+
+        try:
+            request = json.loads(message)
+        except json.JSONDecodeError:
+            response["errors"].append("Invalid JSON")
+
+        if "entity" in request and request["entity"] is not None:
+            self.handle_entity_workflow(request, response)
+        elif "service" in request and request["service"] is not None:
+            self.handle_service_task(request, response)
+        else:
+            response["errors"].append("Invalid JSON")
+
+        # out = json.dumps(response).encode()
+        if len(response["errors"]) != 0 or "reload" in request and request["reload"]:
+            # Try to load entities (and services) again
+            self.entity_manager.load()
+            response["info"].append("Reloading entities and services...")
+
+        logger.debug(f"Sending response: {response}")
+        self.socket.send_json(response)
 
     def handle_entity_workflow(self, request, response):
         entity = request["entity"]
