@@ -1,4 +1,6 @@
+import asyncio
 import os
+import time
 from dizzy.daemon import Server
 from dizzy.daemon.client.basic import DizzyClient
 import logging
@@ -27,6 +29,7 @@ def start_server():
 class TestServer:
     def setup_method(self):
         self.server = Server(port=7777)
+        self.client = DizzyClient(port=7777)
 
         # start the async server in a separate thread
         def async_server():
@@ -34,21 +37,34 @@ class TestServer:
 
             asyncio.run(self.server.run())
 
-        self.server_thread = threading.Thread(target=async_server)
-        self.server_thread.start()
+        def async_client():
+            import asyncio
 
-        self.client = DizzyClient(port=7777)
+            asyncio.run(self.client.run())
+
+        self.server_thread = threading.Thread(target=async_server)
+        self.client_thread = threading.Thread(target=async_client)
+
+        self.server_thread.start()
+        self.client_thread.start()
 
     def teardown_method(self):
         self.client.stop()
         self.server.stop()
         try:
+            self.client_thread.join()
             self.server_thread.join()
         except KeyboardInterrupt:
             pass
 
     def test_server(self):
-        response = self.client.request_task("uno", "A")
+        # response = await self.client.request_task("uno", "A")
+        # run the coroutine in the event loop
+        asyncio.run(self.client.request_task("uno", "A"))
+        while len(self.client.history) == 0:
+            time.sleep(0.1)
+
+        _, response = self.client.history[0]
         assert response["status"] == "completed"
 
     # def test_not_blocking(self):

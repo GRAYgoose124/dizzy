@@ -40,6 +40,9 @@ class SimpleRequestServer:
 
         self.running = True
         while self.running != False:
+            if self.frontend.closed:
+                break
+
             try:
                 [identity, _, message] = await self.frontend.recv_multipart()
             except (zmq.error.ZMQError, asyncio.exceptions.CancelledError):
