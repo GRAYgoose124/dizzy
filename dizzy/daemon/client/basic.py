@@ -7,10 +7,11 @@ class DizzyClient:
 
     def __new__(cls, *args, **kwargs):
         """Singleton"""
-        if cls._instance is None:
-            cls._instance = super(DizzyClient, cls).__new__(cls)
+        # if cls._instance is None:
+        #     cls._instance = super(DizzyClient, cls).__new__(cls)
 
-        return cls._instance
+        # return cls._instance
+        return super(DizzyClient, cls).__new__(cls)
 
     def __init__(self, address="localhost", port=5555):
         self.context = zmq.Context()
