@@ -7,13 +7,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class DizzyClient:
+class SimpleAsyncClient:
     _instance = None
 
     def __new__(cls, *args, **kwargs):
         """Singleton"""
         if cls._instance is None:
-            cls._instance = super(DizzyClient, cls).__new__(cls)
+            cls._instance = super(SimpleAsyncClient, cls).__new__(cls)
 
         return cls._instance
 

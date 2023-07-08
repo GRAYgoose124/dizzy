@@ -1,14 +1,16 @@
 from .server.__main__ import SimpleRequestServer as Server
 from .server.__main__ import DaemonEntityManager
 
-from .client.__main__ import SimpleCLIClient as Client
+from .client.cli import SimpleCLIClient as CLICient
+from .client.asy import SimpleAsyncClient
 
 from . import settings
 from .settings import *
 
 __all__ = [
     "Server",
-    "Client",
+    "CLICient",
+    "SimpleAsyncClient",
     "DaemonEntityManager",
     *settings.__all__,
 ]

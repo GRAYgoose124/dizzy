@@ -65,6 +65,7 @@ class SimpleRequestServer:
             "errors": [],
             "info": [],
             "result": None,
+            "request": message.decode(),
             "ctx": None,
         }
 

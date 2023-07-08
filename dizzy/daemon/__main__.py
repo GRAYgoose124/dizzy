@@ -4,11 +4,12 @@ import logging
 from pathlib import Path
 import sys
 import zmq
+import asyncio
 
-from . import Server, Client, data_root
+from . import Server, CLICient, data_root
 
 
-def server(port=5555):
+async def server(port=5555):
     try:
         server = Server(port=port)
     except zmq.error.ZMQError as e:
@@ -16,13 +17,13 @@ def server(port=5555):
         sys.exit(1)
 
     try:
-        server.handle_request()
+        await server.run()
     except KeyboardInterrupt:
         print("Server stopped.")
 
 
 def client(port=5555):
-    client = Client(port=port)
+    client = CLICient(port=port)
 
     try:
         client.run()
@@ -64,10 +65,10 @@ def main():
 
     if args.mode == "server":
         add_file_handler(data_root / "server.log")
-        server(port=args.port)
+        asyncio.run(server(port=args.port))
     elif args.mode == "client":
         add_file_handler(data_root / "client.log")
-        client(port=args.port)
+        asyncio.run(client(port=args.port))
 
 
 if __name__ == "__main__":

@@ -66,10 +66,29 @@ class EntityManager(ActionDataclassMixin):
 
         logger.debug(f"Loaded entities {self.entities.keys()}")
 
+    def get_workflows(self) -> list[tuple[str, str]]:
+        workflows = []
+        for entity in self.entities.values():
+            for workflow in entity.workflows:
+                workflows.append((entity.name, workflow))
+
+        return workflows
+
+    def run_workflow(self, workflow: str, entity: str = None):
+        if entity is None:
+            for entity, wf in self.get_workflows():
+                if wf == workflow:
+                    return self.get_entity(entity).run_workflow(workflow)
+        else:
+            if entity in self.entities:
+                return self.get_entity(entity).run_workflow(workflow)
+
     def get_entity(self, entity: str) -> Optional[Entity]:
         if entity in self.entities:
             return self.entities[entity]
-        return None
+        else:
+            logger.warning(f"Entity {entity} not found.")
+            return None
 
     def find_task(self, task: str) -> Optional[tuple[str, str]]:
         for entity in self.entities.values():
@@ -103,6 +122,3 @@ class EntityManager(ActionDataclassMixin):
 
     def get_entity_names(self) -> list[str]:
         return list(self.entities.keys())
-
-    def get_entity_items(self) -> list[tuple[str, list[str]]]:
-        return [(e.name, e.services) for e in self.entities.values()]

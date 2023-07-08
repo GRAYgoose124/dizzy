@@ -16,7 +16,9 @@ class ReadProjectFile(Task):
             raise FileNotFoundError(f"File {path} not found")
 
         with open(path, "r") as f:
-            return f.read()
+            ctx["content"] = f.read()
+
+        return ctx["content"]
 
 
 class WriteProjectFile(Task):
