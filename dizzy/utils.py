@@ -5,6 +5,10 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+class DependencyError(Exception):
+    pass
+
+
 def load_module(path: Path) -> object:
     """Load a module from a path."""
     module_name = path.stem

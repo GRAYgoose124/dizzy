@@ -33,29 +33,33 @@ class TestServer:
 
         # start the async server in a separate thread
         def async_server():
-            import asyncio
-
             asyncio.run(self.server.run())
 
         def async_client():
-            import asyncio
-
             asyncio.run(self.client.run())
 
-        self.server_thread = threading.Thread(target=async_server)
-        self.client_thread = threading.Thread(target=async_client)
-
-        self.server_thread.start()
-        self.client_thread.start()
+        # self.server_thread = threading.Thread(target=async_server)
+        # self.client_thread = threading.Thread(target=async_client)
+        #
+        # self.server_thread.start()
+        # self.client_thread.start()
+        #
+        # Executors instead of threads:
+        self.loop = asyncio.new_event_loop()
+        self.loop.run_in_executor(None, self.server.run)
+        self.loop.run_in_executor(None, self.client.run)
 
     def teardown_method(self):
         self.client.stop()
         self.server.stop()
-        try:
-            self.client_thread.join()
-            self.server_thread.join()
-        except KeyboardInterrupt:
-            pass
+
+        self.loop.stop()
+
+        # try:
+        #     self.client_thread.join()
+        #     self.server_thread.join()
+        # except KeyboardInterrupt:
+        #     pass
 
     @pytest.mark.skip(
         reason="Broken, works but won't always shut down. If you enable, you might need to Ctrl+C"
@@ -63,7 +67,7 @@ class TestServer:
     def test_server(self):
         # response = await self.client.request_task("uno", "A")
         # run the coroutine in the event loop
-        asyncio.run(self.client.request_task("uno", "A"))
+        self.loop.run(self.client.request_task("uno", "A"))
         while len(self.client.history) == 0:
             time.sleep(0.1)
 

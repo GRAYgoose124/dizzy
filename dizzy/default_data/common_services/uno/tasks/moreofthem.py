@@ -1,4 +1,5 @@
 from dizzy import Task
+from dizzy.utils import DependencyError
 
 
 class C(Task):
@@ -9,7 +10,12 @@ class C(Task):
     @staticmethod
     def run(ctx):
         ctx["C"] = "C"
-        return f"{ctx['B']}C"
+
+        # TODO: lift this out of the Task
+        try:
+            return f"{ctx['B']}C"
+        except KeyError:
+            raise DependencyError("Task C depends on B, which was not run")
 
 
 class D(Task):

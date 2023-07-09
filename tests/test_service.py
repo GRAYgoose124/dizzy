@@ -34,6 +34,10 @@ class TestServiceManager:
     def test_requested_actions(self):
         self.man.possible_actions == ["service_info"]
 
+    def test_run_action(self):
+        result = self.man.try_run_action("service_info")
+        assert len(result) == 3  # project, status, uno
+
 
 class TestService:
     def setup_method(self):
@@ -62,6 +66,5 @@ class TestService:
 
         self.service.get_task("D").run(ctx)
 
-        assert "entity_info" in ctx
+        assert "entity_info" in ctx  # Not runnable by services only.
         assert "service_info" in ctx
-        print(ctx)

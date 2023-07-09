@@ -6,6 +6,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from ..protocol import Request, Response
+
 
 class SimpleAsyncClient:
     _instance = None

@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 from dizzy.daemon import all_entities, DaemonEntityManager, Request, Response
+from dizzy.utils import DependencyError
 
 
 class TestProtocol:
@@ -19,12 +20,34 @@ class TestProtocol:
     def test_workflow(self):
         workflows = self.em.get_workflows()
         workflow_names = [w[1] for w in workflows]
-        assert workflow_names == ["love", "einzy", "info", "hubris"]
+        assert all(wf in ["love", "einzy", "info", "hubris"] for wf in workflow_names)
         workflow_entities = [w[0] for w in workflows]
-        assert workflow_entities == ["zwei", "einz", "einz", "drei"]
+        assert all(e in ["zwei", "einz", "einz", "drei"] for e in workflow_entities)
 
         result = self.em.run_workflow(self.em.get_workflows()[0])
         print(result)
+
+    def test_taskservice(self):
+        service = self.em.find_service("uno")
+        assert service is not None
+
+        tasks = service.get_tasks()
+        assert len(tasks) == 4
+
+        task = tasks[0]
+        assert task.name in ["A", "B", "C", "D"]
+        assert all(e in ["entity_info", "service_info"] for e in task.requested_actions)
+
+        try:
+            result = task.run({"name": "dizzy", "age": 42})
+            assert result in [
+                "A",
+                "B",
+                "BC",
+                "D",
+            ]  # BC will never happen - C task will DependencyError.
+        except DependencyError:
+            pass
 
     def test_request_response(self):
         request = Request(

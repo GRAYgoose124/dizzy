@@ -3,10 +3,10 @@ name: Python CI
 on:
   push:
     branches:
-      - main  # Replace with your branch name
+      - main 
   pull_request:
     branches:
-      - main  # Replace with your branch name
+      - main 
 
 jobs:
   build:
@@ -19,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.9  # Replace with your desired Python version
+        python-version: 3.11
 
     - name: Install dependencies
       run: |

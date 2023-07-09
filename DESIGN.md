@@ -15,7 +15,7 @@ Workflow information is propagated as such:
     tasks = list[Tasks]
     ctx['workflow'][tasks[n]] = ctx['result'][tasks[n-1]]
 
-Workflow information is to be stored on the server, but is corrently lost.
+Workflow information is to be stored on the server, but is currently lost.
 
 While task dependencies propagate their results to dependents via:
 
