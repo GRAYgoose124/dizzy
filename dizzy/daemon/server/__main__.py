@@ -7,7 +7,7 @@ import zmq.asyncio
 
 from dizzy import EntityManager
 from ..settings import SettingsManager
-
+from ..protocol import Response, Request
 
 logger = logging.getLogger(__name__)
 
@@ -56,99 +56,91 @@ class SimpleRequestServer:
         self.context.term()
         self.running = False
 
-    async def handle_request(self, identity, message):
+    async def handle_request(self, identity: str, message: bytes):
         logger.debug(f"Received request: {message}")
 
-        response = {
-            "id": uuid.uuid4().hex,
-            "status": "incomplete",
-            "errors": [],
-            "info": [],
-            "result": None,
-            "request": message.decode(),
-            "ctx": None,
-        }
-
         try:
-            request = json.loads(message)
+            request = Request(**json.loads(message.decode()))
+            response = Response.from_request(identity, request)
+
         except (json.JSONDecodeError, UnicodeDecodeError):
-            response["errors"].append("Invalid JSON")
-            request = {}
+            response = Response.from_request(identity, None)
+            request = None
 
-        if "id" in request:
-            response["id"] = request["id"]
-
-        if "entity" in request and request["entity"] is not None:
+        unhandled = True
+        if request.entity is not None:
             self.handle_entity_workflow(request, response)
-        elif "service" in request and request["service"] is not None:
+            unhandled = False
+        if request.service is not None:
             self.handle_service_task(request, response)
-        else:
-            response["errors"].append("Invalid JSON")
+            unhandled = False
 
-        if len(response["errors"]) != 0 or ("reload" in request and request["reload"]):
+        if unhandled:
+            response.add_error("BadRequest", "Invalid JSON, no entity or service")
+
+        if len(response.errors) != 0 or "reload" in request.options:
             self.entity_manager.load()
-            response["info"].append("Reloading entities and services...")
+            response.add_info("reload", "Reloaded entities")
 
-        response_data = json.dumps(response).encode("utf-8")
+        response_data = response.to_json().encode()
         await self.frontend.send_multipart([identity, b"", response_data])
 
     def handle_entity_workflow(self, request, response):
-        entity = request["entity"]
-        workflow = request.get("workflow", None)
+        entity = request.entity
+        workflow = request.workflow
 
         if not workflow:
-            response["errors"].append("Invalid JSON, no workflow")
+            response.add_error("BadWorkflow", "Invalid JSON, no workflow")
             return
 
         if entity not in self.entity_manager.entities.keys():
-            response["errors"].append("Entity not found")
+            response.add_error("EntityNotFound", "Entity not found")
             return
 
-        response["entity"] = entity
         try:
             ctx = self.entity_manager.get_entity(entity).run_workflow(workflow)
         except KeyError as e:
-            response["errors"].append(f"No such workflow: {e}")
+            response.add_error("KeyError", str(e))
             ctx = None
 
-        # response["ctx"] = ctx
-        response["ctx"] = request.get("ctx", {})
+        response.ctx = request.ctx
 
-        # set
-        response["workflow"] = request["workflow"]
-        response["status"] = (
-            "completed" if len(response["errors"]) == 0 else "finished_with_errors"
+        response.set_status(
+            "completed" if len(response.errors) == 0 else "finished_with_errors"
         )
-        response["result"] = ctx["workflow"]["result"] if ctx else None
+        response.set_result(ctx["workflow"]["result"] if "workflow" in ctx else None)
 
     def handle_service_task(self, request, response):
-        service = request["service"]
-        task = request.get("task", None)
+        service = request.service
+        task = request.task
+        ctx = request.ctx
 
         if not task:
-            response["errors"].append("Invalid JSON, no task")
+            response.add_error("BadTask", "Invalid JSON, no task")
             return
 
         if service not in self.entity_manager.service_manager.services:
-            response["errors"].append("Service not found")
+            response.add_error("ServiceNotFound", "Service not found")
             return
 
-        response["available_services"] = (
-            service,
-            self.entity_manager.service_manager.get_service(service).get_task_names(),
+        response.add_info(
+            "available_services",
+            (
+                service,
+                self.entity_manager.service_manager.get_service(
+                    service
+                ).get_task_names(),
+            ),
         )
 
-        ctx = request.get("ctx", {})
-
         try:
-            result = self.entity_manager.service_manager.run_task(task, ctx)
-            response["result"] = result
-            response["ctx"] = ctx
-            response["status"] = (
-                "completed" if len(response["errors"]) == 0 else "finished_with_errors"
+            response.result = self.entity_manager.service_manager.run_task(task, ctx)
+            response.ctx = ctx
+            response.set_status(
+                "completed" if len(response.errors) == 0 else "finished_with_errors"
             )
         except Exception as e:
-            response["errors"].append(f"Error running task: {e}")
+            response.add_error("FinalError", f"Error running task: {e}")
 
     def handle_query(self, request, response):
         """"""

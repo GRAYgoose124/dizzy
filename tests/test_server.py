@@ -57,7 +57,9 @@ class TestServer:
         except KeyboardInterrupt:
             pass
 
-    # @pytest.mark.skip(reason="Broken, works but won't always shut down. If you enable, you might need to Ctrl+C")
+    @pytest.mark.skip(
+        reason="Broken, works but won't always shut down. If you enable, you might need to Ctrl+C"
+    )
     def test_server(self):
         # response = await self.client.request_task("uno", "A")
         # run the coroutine in the event loop
