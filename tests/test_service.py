@@ -13,7 +13,7 @@ class TestServiceManager:
         print(common_services, self.man.services.values())
 
     def test_ServiceManager(self):
-        assert self.man.get_service("uno").get_task("D").run({}) == "D"
+        assert self.man.get_service("uno").get_task("D").run()["final"] == "D"
 
     def test_task_resolution(self):
         assert [t.name for t in self.man.resolve_task_dependencies("D")] == ["D"]
@@ -26,13 +26,12 @@ class TestServiceManager:
         ]
 
     def test_run_tasklist(self):
-        ctx = {}
         tasklist = self.man.resolve_task_dependencies("C")
-        self.man.run_tasklist(tasklist, ctx)
-        assert ctx == {"A": "A", "B": "AB", "C": "C"}
+        final = self.man.run_tasklist(tasklist)
+        assert final == "ABC"
 
     def test_requested_actions(self):
-        self.man.possible_actions == ["service_info"]
+        assert self.man.possible_actions == ["service_info"]
 
     def test_run_action(self):
         result = self.man.try_run_action("service_info")
@@ -59,12 +58,11 @@ class TestService:
 
     def test_requested_actions(self):
         assert self.service.get_task("D").requested_actions == [
-            "entity_info",
+            "entity_info",  # TODO: Need to test in entity manager tests...
             "service_info",
         ]
-        ctx = {}
 
-        self.service.get_task("D").run(ctx)
+        ctx = self.service.get_task("D").run()
 
-        assert "entity_info" in ctx  # Not runnable by services only.
+        # assert "entity_info" in ctx  # Not runnable by services only.
         assert "service_info" in ctx

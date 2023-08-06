@@ -21,6 +21,7 @@ class Task(ABC, ActionDataclassMixin):
 
     @abstractmethod
     def run(self, *args, **kwargs):
+        """run can also be defined as a @staticmethod if you do not need self.try_run_action. (Have no requested_actions)"""
         pass
 
     def __call__(self, *args, **kwargs):

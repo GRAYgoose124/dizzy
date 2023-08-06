@@ -5,8 +5,7 @@ class A(Task):
     description = "A task"
 
     @staticmethod
-    def run(ctx):
-        ctx["A"] = "A"
+    def run():
         return "A"
 
 
@@ -15,6 +14,5 @@ class B(Task):
     dependencies = ["A"]
 
     @staticmethod
-    def run(ctx):
-        ctx["B"] = f"{ctx['A']}B"
-        return f"{ctx['A']}B"
+    def run(A):
+        return f"{A}B"

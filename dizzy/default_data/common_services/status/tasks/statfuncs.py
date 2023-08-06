@@ -4,12 +4,11 @@ from dizzy import Task
 logger = logging.getLogger(__name__)
 
 
-class Task(Task):
+class Tasky(Task):
     """A task"""
 
     @staticmethod
-    def run(ctx):
-        ctx["Task"] = "A"
+    def run():
         return "Task"
 
 
@@ -18,7 +17,7 @@ class Info(Task):
 
     requested_actions = ["entity_info", "service_info"]
 
-    def run(self, ctx):
+    def run(self):
         info = {}
         try:
             logger.debug(f"Trying to get service info from %s", self)
@@ -27,7 +26,5 @@ class Info(Task):
         except Exception as e:
             logger.error(f"Error getting entity info: {e}")
             info["error"] = f"{e}"
-
-        ctx[self.__class__.__name__] = info
 
         return info
