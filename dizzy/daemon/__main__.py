@@ -22,8 +22,8 @@ async def server(port=5555):
         print("Server stopped.")
 
 
-def client(port=5555):
-    client = CLICient(port=port)
+def client(address="localhost", port=5555):
+    client = CLICient(address=address, port=port)
 
     try:
         client.run()
@@ -58,6 +58,12 @@ def main():
         default=5555,
         help="Specify the port to connect to",
     )
+    parser.add_argument(
+        "-a",
+        "--address",
+        default="localhost",
+        help="Specify the address to connect to",
+    )
 
     args = parser.parse_args()
 
@@ -68,7 +74,7 @@ def main():
         asyncio.run(server(port=args.port))
     elif args.mode == "client":
         add_file_handler(data_root / "client.log")
-        asyncio.run(client(port=args.port))
+        asyncio.run(client(address=args.address, port=args.port))
 
 
 if __name__ == "__main__":

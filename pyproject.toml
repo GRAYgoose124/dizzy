@@ -10,7 +10,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 pyyaml = "^6.0"
 zmq = "^0.0.0"
 click = "^8.1.3"
@@ -24,9 +24,7 @@ build-backend = "poetry.core.masonry.api"
 
 
 [tool.poetry.scripts]
-dizzy = "dizzy.__main__:main"
-dizae = "dizzy.daemon.__main__:main"
+dizzy = "dizzy.daemon.__main__:main"
 dizgen = "dizzy.daemon.dta_gen:main"
-dizzy-server = "dizzy.daemon.__main__:server"
-dizzy-client = "dizzy.daemon.__main__:client"
+
 depres = "depres.__main__:main"
