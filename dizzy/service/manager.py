@@ -85,19 +85,24 @@ class ServiceManager(ActionDataclassMixin):
 
         return tasks
 
-    def run_tasklist(self, tasklist: list[Task], ctx: dict) -> dict:
+    def run_tasklist(self, tasklist: list[Task], ctx: dict = None) -> dict:
         """Run a tasklist in a context"""
         logger.debug(f"Running {tasklist=}")
 
-        results = []
+        ctx = ctx or {}
         for task in tasklist:
-            logger.debug(f"-- Running task {task.name}, {ctx=}")
-            results.append(task.run(ctx))
+            this_tasks_args = {dep: ctx[dep].pop() for dep in task.dependencies}
 
-        logger.debug(f"- Tasklist results: {results=}")
-        return results[-1] if len(results) > 0 else None
+            logger.debug(f"-- Running task {task.name}, {this_tasks_args=}")
+            result = task.run(**this_tasks_args)
 
-    def run_task(self, task: str, ctx: dict) -> dict:
+            ctx.setdefault(task.name, []).append(result)
+
+        final = ctx[tasklist[-1].name].pop()
+        logger.debug(f"Tasklist {final=}, {ctx=} (should be empty)")
+        return final
+
+    def run_task(self, task: str, ctx: dict = None) -> dict:
         """Run a task in a context"""
         logger.debug(f"Running {task=}")
 

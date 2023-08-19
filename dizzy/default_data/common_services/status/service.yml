@@ -1,4 +1,4 @@
 service:
   description: Status service.
   name: status
-  tasks: ["Task", "Info"]
+  tasks: ["Tasky", "Info"]

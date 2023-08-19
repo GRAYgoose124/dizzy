@@ -38,17 +38,6 @@ class TestProtocol:
         assert task.name in ["A", "B", "C", "D"]
         assert all(e in ["entity_info", "service_info"] for e in task.requested_actions)
 
-        try:
-            result = task.run({"name": "dizzy", "age": 42})
-            assert result in [
-                "A",
-                "B",
-                "BC",
-                "D",
-            ]  # BC will never happen - C task will DependencyError.
-        except DependencyError:
-            pass
-
     def test_request_response(self):
         request = Request(
             entity="einz",

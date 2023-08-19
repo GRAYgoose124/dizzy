@@ -62,6 +62,6 @@ class TestDaemonEntityManager:
 
         ctx = {}
 
-        result = D.run(ctx)
+        result = D.run()
 
         print(result, ctx)
