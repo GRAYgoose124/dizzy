@@ -37,19 +37,15 @@ class SimpleAsyncClient:
 
     async def run(self):
         self.running = True
-        while self.running:
-            if self.socket.closed:
-                break
-
+        while self.running and not self.socket.closed:
             try:
                 request = self.request_queue.get_nowait()
             except asyncio.QueueEmpty:
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.1)
                 continue
 
             response = await self.send_request(request)
-            self.process_response(request, response)
-            self.request_queue.task_done()
+            self._process_response(request, response)
             await asyncio.sleep(0)
 
     async def send_request(self, request):
@@ -57,15 +53,30 @@ class SimpleAsyncClient:
         response = await self.socket.recv()
         return json.loads(response.decode())
 
-    def process_response(self, request, response):
+    def _process_response(self, request, response):
         self.history.append((request, response))
         logger.info(f"Received response for request: {request}")
         logger.info(f"Response: {response}")
+        self.request_queue.task_done()
+
+    def _build_workflow_request(self, entity: str, workflow: str):
+        return {"entity": entity, "workflow": workflow}
+
+    def _build_task_request(self, service: str, task: str):
+        return {"service": service, "task": task}
 
     async def request_workflow(self, entity: str = "einz", workflow: str = "einzy"):
-        request = {"entity": entity, "workflow": workflow}
+        request = self._build_workflow_request(entity, workflow)
         await self.request_queue.put(request)
 
     async def request_task(self, service: str = "common", task: str = "echo"):
-        request = {"service": service, "task": task}
+        request = self._build_task_request(service, task)
         await self.request_queue.put(request)
+
+    def sync_request_workflow(self, entity: str = "einz", workflow: str = "einzy"):
+        request = self._build_workflow_request(entity, workflow)
+        return asyncio.run(self.send_request(request))
+
+    def sync_request_task(self, service: str = "common", task: str = "echo"):
+        request = self._build_task_request(service, task)
+        return asyncio.run(self.send_request(request))
