@@ -93,8 +93,8 @@ class ServiceManager(ActionDataclassMixin):
         for task in tasklist:
             this_tasks_args = {dep: ctx[dep].pop() for dep in task.dependencies}
 
-            logger.debug(f"-- Running task {task.name}, {this_tasks_args=}")
-            result = task.run(**this_tasks_args)
+            logger.debug(f"-- Running task {task.name}, {ctx=}")
+            result = task.run(this_tasks_args)
 
             ctx.setdefault(task.name, []).append(result)
 

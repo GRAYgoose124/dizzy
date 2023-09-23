@@ -8,8 +8,8 @@ class C(Task):
     dependencies = ["B"]
 
     @staticmethod
-    def run(B):
-        return f"{B}C"
+    def run(ctx):
+        return f"{ctx['B']}C"
 
 
 class D(Task):
