@@ -57,6 +57,13 @@ class ServiceManager(ActionDataclassMixin):
     def get_service_items(self) -> list[tuple[str, list[str]]]:
         return [(s.name, s.get_task_names()) for s in self.services.values()]
 
+    def get_all_known_tasks(self):
+        """Get all known tasks from all services"""
+        tasks = []
+        for service in self.services.values():
+            tasks += service.get_tasks()
+        return tasks
+
     def find_task(self, task: str) -> Optional[Task]:
         owner = self.find_owner_service(task)
         if owner:

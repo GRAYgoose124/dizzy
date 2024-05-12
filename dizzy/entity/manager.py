@@ -122,3 +122,6 @@ class EntityManager(ActionDataclassMixin):
 
     def get_entity_names(self) -> list[str]:
         return list(self.entities.keys())
+
+    def __getitem__(self, entity: str) -> Entity:
+        return self.get_entity(entity)

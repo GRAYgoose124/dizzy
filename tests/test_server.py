@@ -15,6 +15,7 @@ def busy_client():
     while True:
         try:
             response = client.request_task("uno", "A")
+            time.sleep(5)
         except Exception:
             break
 
@@ -67,7 +68,7 @@ class TestServer:
     def test_server(self):
         # response = await self.client.request_task("uno", "A")
         # run the coroutine in the event loop
-        self.loop.run(self.client.request_task("uno", "A"))
+        self.loop.run_in_executor(None, self.client.request_task, "uno", "A")
         while len(self.client.history) == 0:
             time.sleep(0.1)
 

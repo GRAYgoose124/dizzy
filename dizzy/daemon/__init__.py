@@ -7,7 +7,6 @@ from .client.asy import SimpleAsyncClient
 from .protocol import Request, Response
 
 from . import settings
-from .settings import *
 
 __all__ = [
     "Server",
@@ -16,5 +15,4 @@ __all__ = [
     "DaemonEntityManager",
     "Request",
     "Response",
-    *settings.__all__,
 ]

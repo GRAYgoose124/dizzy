@@ -28,50 +28,81 @@ class SettingsManager:
     settings: Settings
     _meta: MetaSettings
 
-    def __new__(
-        cls,
+    def __init__(
+        self,
         *args,
+        data_root=None,
         write_to_disk=False,
         live_reload=False,
         force_use_default_data=False,
-        **kwargs
+        **kwargs,
     ):
-        if cls._instance is None:
-            cls._instance = super(SettingsManager, cls).__new__(cls)
+        self.live_reload = live_reload
 
-        # TODO: Probably should do this another way, but it works for now.
-        # Get from DIZZY_DATA_ROOT, ~/.dizzy, or packaged default_data.
-        env_var = os.getenv("DIZZY_DATA_ROOT")
-        env_root = Path(env_var) if env_var else None
-        home_root = Path("~/.dizzy")
-        packaged_root = Path(__file__).parent.parent / "default_data"
+        # Get from DIZZY_DATA_ROOT, ~/.dizzy, or packaged default_data if not provided
+        # home_root = Path("~/.dizzy")
+        # packaged_root = Path(__file__).parent.parent / "default_data"
+        # env_root, env_var = None, None
+        # if data_root:
+        #     env_root = Path(data_root)
+        # else:
+        #     env_var = os.getenv("DIZZY_DATA_ROOT")
+        #     env_root = Path(env_var) if env_var else None
+        if not data_root:
+            env_root = Path(os.getenv("DIZZY_DATA_ROOT"))
+            if not env_root:
+                raise ValueError("write_to_disk requires a data_root.")
+            else:
+                data_root = env_root
+                logger.debug(f"Using data_root from DIZZY_DATA_ROOT: {data_root}")
+        else:
+            data_root = Path(data_root)
+            logger.debug(f"Using data_root provided: {data_root}")
 
-        if env_var and not (env_root / "settings.yml").exists() and write_to_disk:
-            shutil.copytree(packaged_root, env_root, dirs_exist_ok=True)
-        # if not (home_root / "settings.yml").exists() and write_to_disk:
-        #    shutil.copytree(packaged_root, home_root, dirs_exist_ok=True)
+        if write_to_disk:
+            if not data_root:
+                raise ValueError("write_to_disk requires a data_root set.")
 
-        cls._instance.live_reload = live_reload
-
-        cls._instance.data_root = (
-            env_root
-            if env_var and env_root.exists()
-            else home_root
-            if home_root.exists()
-            else packaged_root
-        )
+            if not data_root.exists():
+                logger.debug(f"Creating data_root: {data_root}")
+                data_root.mkdir(parents=True)
+                packaged_root = Path(__file__).parent.parent / "default_data"
+                shutil.copytree(packaged_root, data_root, dirs_exist_ok=True)
 
         # if force_use_default_data:
-        #    cls._instance.data_root = packaged_root
-
-        return cls._instance
+        #     cls._instance.data_root = packaged_root
+        # else:
+        #     cls._instance.data_root = (
+        #         env_root
+        #         if env_root and env_root.exists()
+        #         else home_root if home_root.exists() else packaged_root
+        #     )
+        # simply get it from data_root, env_var, or packaged default_data
+        self.data_root = data_root
 
     def load_settings(
         self,
     ) -> Settings:
+        if not self.live_reload and hasattr(self, "_loaded") and self._loaded:
+            return
+
         daemon_settings_file = self.data_root / "settings.yml"
         common_service_dir = self.data_root / "common_services"
         entities_dir = self.data_root / "entities"
+        logger.debug(f"Loading settings from {daemon_settings_file}")
+
+        if not daemon_settings_file.exists():
+            raise FileNotFoundError(
+                f"Settings file not found at {daemon_settings_file}."
+            )
+
+        if not common_service_dir.exists():
+            raise FileNotFoundError(
+                f"Common services directory not found at {common_service_dir}."
+            )
+
+        if not entities_dir.exists():
+            raise FileNotFoundError(f"Entities directory not found at {entities_dir}.")
 
         with open(daemon_settings_file, "r") as f:
             settings_from_yaml = yaml.safe_load(f)["settings"]
@@ -99,7 +130,9 @@ class SettingsManager:
         }
 
         all_entities = {
-            e.name: f for e, f in zip(entities_dir.iterdir(), _all_entity_files)
+            e.name: f
+            for e, f in zip(entities_dir.iterdir(), _all_entity_files)
+            if (e / "entity.yml").exists()
         }
         default_entities = {
             e: f for e, f in all_entities.items() if e in default_entities
@@ -114,6 +147,7 @@ class SettingsManager:
         )
 
         self._meta = MetaSettings(entities_dir, common_service_dir)
+        self._loaded = True
 
     @property
     def settings(self):
@@ -153,4 +187,4 @@ class SettingsManager:
 # Basically, Anything in Settings can be accessed as if it were a global in settings... Ie settings.data_root.
 # If you pass something like SettingsManager(write_to_disk=True) it will allow copying of the default_data to ~/.dizzy.
 # If you pass something like SettingsManager(write_to_disk=True, force_use_default_data=True) it will use the default_data packaged with dizzy and write it wherever you specify.
-SettingsManager().inject(globals())
+# SettingsManager(live_reload=True).inject(globals())

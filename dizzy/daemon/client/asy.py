@@ -19,7 +19,7 @@ class SimpleAsyncClient:
 
         return cls._instance
 
-    def __init__(self, address="localhost", port=5555):
+    def __init__(self, address="localhost", port=5555, protocol_dir=None):
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(f"tcp://{address}:{port}")
@@ -50,10 +50,16 @@ class SimpleAsyncClient:
 
     async def send_request(self, request):
         self.socket.send_json(request)
-        response = await self.socket.recv()
-        return json.loads(response.decode())
+        # now await response from recv_multipart which returns a list
+        response = await self.socket.recv_multipart()
+        logger.debug(f"Received raw response: {response}")
+        message = response[0]
+        return json.loads(message.decode())
 
     def _process_response(self, request, response):
+        request = Request(**request)
+        response = Response(**response)
+
         self.history.append((request, response))
         logger.info(f"Received response for request: {request}")
         logger.info(f"Response: {response}")
