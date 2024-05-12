@@ -67,7 +67,6 @@ class SimpleRequestServer:
         try:
             request = Request(**json.loads(message.decode()))
             response = Response.from_request(identity, request)
-            logger.debug(f"\n{request}\n\nreturned\n\n{response}\n")
 
         except (json.JSONDecodeError, UnicodeDecodeError):
             response = Response.from_request(identity, None)
@@ -85,7 +84,13 @@ class SimpleRequestServer:
         if unhandled:
             response.add_error("BadRequest", "Invalid JSON, no entity or service")
 
+        response.set_status(
+            "completed" if len(response.errors) == 0 else "finished_with_errors"
+        )
+
         response_data = response.to_json().encode()
+
+        logger.debug(f"\n{request}\n\nreturned\n\n{response}\n")
         await self.frontend.send_multipart([identity, b"", response_data])
 
     def handle_entity_workflow(self, request, response):
@@ -108,9 +113,6 @@ class SimpleRequestServer:
 
         response.ctx = request.ctx
 
-        response.set_status(
-            "completed" if len(response.errors) == 0 else "finished_with_errors"
-        )
         response.set_result(ctx["workflow"]["result"] if "workflow" in ctx else None)
 
     def handle_service_task(self, request, response):
@@ -141,10 +143,6 @@ class SimpleRequestServer:
             response.ctx = ctx
         except Exception as e:
             response.add_error("FinalError", f"Error running task: {e}")
-
-        response.set_status(
-            "completed" if len(response.errors) == 0 else "finished_with_errors"
-        )
 
     def handle_query(self, request, response):
         """"""

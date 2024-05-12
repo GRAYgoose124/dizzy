@@ -1,4 +1,0 @@
-service:
-  description: Project service.
-  name: project
-  tasks: ["ManageProject", "ReadProjectFile", "WriteProjectFile"]
