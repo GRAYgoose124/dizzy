@@ -20,27 +20,19 @@ class Request(JSONWizard):
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
     entity: str | None = None
     workflow: str | None = None
-    service: str | None = None
-    task: str | None = None
     args: dict = field(default_factory=dict)
     ctx: dict = field(default_factory=dict)
     options: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        if self.workflow is None and self.service is None:
-            raise ValueError("Either workflow or service must be set")
+        if not self.entity:
+            raise ValueError("Request must have an entity.")
 
-        if self.workflow is not None and self.service is not None:
-            raise ValueError("Only one of workflow or service can be set")
-
-        if self.service is not None and self.task is None:
-            raise ValueError("If service is set, task must be set")
-
-        if self.entity is not None and self.workflow is None:
-            raise ValueError("If entity is set, workflow must be set")
+        if not self.workflow:
+            raise ValueError("Request must have a workflow.")
 
     def __str__(self):
-        return f"Request(id={self.id}, workflow={self.workflow}, task={self.task}, args={self.args})"
+        return f"Request(id={self.id}, workflow={self.workflow}, args={self.args})"
 
 
 @dataclass

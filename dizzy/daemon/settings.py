@@ -28,6 +28,12 @@ class SettingsManager:
     settings: Settings
     _meta: MetaSettings
 
+    # instance
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(SettingsManager, cls).__new__(cls)
+        return cls._instance
+
     def __init__(
         self,
         *args,
@@ -79,6 +85,8 @@ class SettingsManager:
         #     )
         # simply get it from data_root, env_var, or packaged default_data
         self.data_root = data_root
+
+        self.inject(globals())
 
     def load_settings(
         self,

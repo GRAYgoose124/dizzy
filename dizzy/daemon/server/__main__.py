@@ -77,9 +77,6 @@ class SimpleRequestServer:
         if request.entity is not None:
             self.handle_entity_workflow(request, response)
             unhandled = False
-        if request.service is not None:
-            self.handle_service_task(request, response)
-            unhandled = False
 
         if unhandled:
             response.add_error("BadRequest", "Invalid JSON, no entity or service")
@@ -109,7 +106,7 @@ class SimpleRequestServer:
             ctx = self.entity_manager[entity].run_workflow(workflow)
         except KeyError as e:
             response.add_error("KeyError", str(e))
-            ctx = None
+            ctx = {}
 
         response.ctx = request.ctx
 

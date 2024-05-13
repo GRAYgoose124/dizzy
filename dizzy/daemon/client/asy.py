@@ -38,17 +38,19 @@ class SimpleAsyncClient:
     async def run(self):
         self.running = True
         while self.running and not self.socket.closed:
-            try:
-                request = self.request_queue.get_nowait()
-            except asyncio.QueueEmpty:
-                await asyncio.sleep(0.1)
-                continue
+            request = await self.request_queue.get()
 
             response = await self.send_request(request)
             self._process_response(request, response)
-            await asyncio.sleep(0)
 
-    async def send_request(self, request):
+    async def send_request(self, request: Request | dict):
+        if not isinstance(request, Request):
+            try:
+                _ = Request(**request)
+            except Exception as e:
+                logger.error(f"Invalid request: {request}")
+                raise e
+
         self.socket.send_json(request)
         # now await response from recv_multipart which returns a list
         response = await self.socket.recv_multipart()

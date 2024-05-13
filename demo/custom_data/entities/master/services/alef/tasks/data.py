@@ -1,37 +1,19 @@
 from dizzy import Task
 
 
-class EinzyA(Task):
-    """A task"""
+class IngestData(Task):
+    """Ingest data from a file"""
 
     @staticmethod
-    def run():
-        return "A"
+    def run(ctx):
+        with open(ctx["file_path"], "r") as f:
+            data = f.read()
+        return {"data": data}
 
 
-class EinzyB(Task):
-    """B task"""
-
-    dependencies = ["EinzyA"]
-
-    @staticmethod
-    def run(EinzyA):
-        return f"{EinzyA}B"
-
-
-class EinzInfo(Task):
-    """Gets info about loaded services."""
-
-    dependencies = ["Info"]
+class ProcessData(Task):
+    """Process data"""
 
     @staticmethod
-    def run(Info):
-        return f"Einz:{Info}"
-
-
-class NotUsed(Task):
-    """Ignored"""
-
-    @staticmethod
-    def run():
-        return "Not used"
+    def run(ctx):
+        return {"processed_data": ctx["data"].upper()}

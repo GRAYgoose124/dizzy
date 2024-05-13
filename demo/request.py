@@ -1,39 +1,35 @@
-""" A simple client demo of the dizzy package. """
-
-import logging
-
 import asyncio
-import time
+import json
+import logging
+from pathlib import Path
 from dizzy.daemon.client.asy import SimpleAsyncClient
 
 logging.basicConfig(level=logging.DEBUG)
 
-# Start the client
-loop = asyncio.new_event_loop()
+# Client Setup
 client = SimpleAsyncClient(port=7777)
 
 
-# request and print task
-async def request_task(client, entity, task):
-    print(f"Request: {entity} - {task}")
-    response = await client.request_task(entity, task)
-    if response:
-        print(
-            f"Response\t->\t{'GOOD' if response['status']  == 'completed' else 'BAD'}"
-        )
-    else:
-        print(f"Response\t->\tN/A")
+async def continuous_send():
+    with open(Path(__file__).parent / "requests/new_project.json", "r") as f:
+        NEW_PROJECT_REQUEST = json.load(f)
+    while True:
+        print("Sending new project request")
+        await client.send_request(NEW_PROJECT_REQUEST)
+        await asyncio.sleep(3)
 
 
 async def main():
+    with open(Path(__file__).parent / "requests/new_project.json", "r") as f:
+        NEW_PROJECT_REQUEST = json.load(f)
+
+    # Run the client, send an initial request, and then start continuous sending
     await asyncio.gather(
         client.run(),
-        client.request_task("uno", "A"),
-        client.request_task("uno", "B"),
-        client.request_task("uno", "C"),
+        client.send_request(NEW_PROJECT_REQUEST),
+        continuous_send(),
     )
 
 
-# start the main loop
-loop.run_until_complete(main())
-loop.close()
+# Adjust the event loop handling to use the default loop
+asyncio.run(main())

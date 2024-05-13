@@ -42,7 +42,7 @@ class ProjectTask(Task):
         return cls
 
 
-class CreateProjectDir(Task):
+class CreateProject(Task):
     """Create a project directory with a given UUID"""
 
     @staticmethod
@@ -59,7 +59,6 @@ class SetProjectDir(Task):
 
     @staticmethod
     def run(ctx):
-        ctx["project"] = Project(**ctx["
         ctx["project"]["root"] = PROJECT_ROOT / ctx["project"]["id"]
         return ctx["project"]["root"]
 

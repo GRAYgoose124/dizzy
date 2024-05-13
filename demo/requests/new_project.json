@@ -1,3 +1,5 @@
 {
-    "entity"
+    "entity": "master",
+    "workflow": "process_data",
+    "options": {}
 }
