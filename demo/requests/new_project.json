@@ -1,5 +1,20 @@
 {
     "entity": "master",
     "workflow": "process_data",
-    "options": {}
+    "step_options": {
+        "CreateProject": {
+            "project_name": "MyProject"
+        },
+        "IngestData": {
+            "data": "data.csv"
+        },
+        "ProcessData": {
+            "data": "data.csv"
+        },
+        "WriteProjectFiles": {
+            "results": ["data.csv"]
+        }
+    }
 }
+
+

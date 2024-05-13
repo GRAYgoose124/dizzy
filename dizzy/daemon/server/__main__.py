@@ -72,6 +72,10 @@ class SimpleRequestServer:
             response = Response.from_request(identity, None)
             request = None
             logger.debug(f"Invalid JSON: {message}")
+        except TypeError as e:
+            response = Response.from_request(identity, None)
+            request = None
+            logger.debug(f"Invalid request: {e}")
 
         unhandled = True
         if request.entity is not None:
@@ -93,6 +97,7 @@ class SimpleRequestServer:
     def handle_entity_workflow(self, request, response):
         entity = request.entity
         workflow = request.workflow
+        step_options = request.step_options
 
         if not workflow:
             response.add_error("BadWorkflow", "Invalid JSON, no workflow")
@@ -103,7 +108,7 @@ class SimpleRequestServer:
             return
 
         try:
-            ctx = self.entity_manager[entity].run_workflow(workflow)
+            ctx = self.entity_manager.run_workflow(workflow, step_options, entity)
         except KeyError as e:
             response.add_error("KeyError", str(e))
             ctx = {}
@@ -121,7 +126,7 @@ class SimpleRequestServer:
             response.add_error("BadTask", "Invalid JSON, no task")
             return
 
-        if service not in self.entity_manager.service_manager.services:
+        if service not in self.entity_manager.common_service_manager.services:
             response.add_error("ServiceNotFound", "Service not found")
             return
 
@@ -129,14 +134,16 @@ class SimpleRequestServer:
             "available_services",
             (
                 service,
-                self.entity_manager.service_manager.get_service(
+                self.entity_manager.common_service_manager.get_service(
                     service
                 ).get_task_names(),
             ),
         )
 
         try:
-            response.result = self.entity_manager.service_manager.run_task(task, ctx)
+            response.result = self.entity_manager.common_service_manager.run_task(
+                task, ctx
+            )
             response.ctx = ctx
         except Exception as e:
             response.add_error("FinalError", f"Error running task: {e}")

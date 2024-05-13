@@ -28,9 +28,9 @@ class SettingsManager:
     settings: Settings
     _meta: MetaSettings
 
-    # instance
+    # singleton:
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
+        if not cls._instance:
             cls._instance = super(SettingsManager, cls).__new__(cls)
         return cls._instance
 
@@ -86,6 +86,7 @@ class SettingsManager:
         # simply get it from data_root, env_var, or packaged default_data
         self.data_root = data_root
 
+        # inject settings into the global namespace for Tasks to use after Daemon initialization
         self.inject(globals())
 
     def load_settings(
@@ -195,4 +196,3 @@ class SettingsManager:
 # Basically, Anything in Settings can be accessed as if it were a global in settings... Ie settings.data_root.
 # If you pass something like SettingsManager(write_to_disk=True) it will allow copying of the default_data to ~/.dizzy.
 # If you pass something like SettingsManager(write_to_disk=True, force_use_default_data=True) it will use the default_data packaged with dizzy and write it wherever you specify.
-# SettingsManager(live_reload=True).inject(globals())

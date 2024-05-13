@@ -24,11 +24,11 @@ class EntityManager(ActionDataclassMixin):
         self.register_action("entity_info", "", self.get_entities)
 
     @property
-    def sm(self) -> ServiceManager:
-        return self.service_manager
+    def csm(self) -> ServiceManager:
+        return self.common_service_manager
 
     @property
-    def service_manager(self) -> ServiceManager:
+    def common_service_manager(self) -> ServiceManager:
         if self.__common_service_manager is None:
             self.__common_service_manager = ServiceManager()
             logger.debug(f"Created new service manager {self.__common_service_manager}")
@@ -36,33 +36,36 @@ class EntityManager(ActionDataclassMixin):
 
     def reset(self):
         self.entities = {}
-        self.service_manager.reset()
+        self.common_service_manager.reset()
 
     def load(self, services: dict, entities: dict):
-        self.sm.load_services(services.values())
+        self.csm.load_services(services.values())
         self.load_entities(entities.values())
 
-    def load_entities(self, entities: list[Path]):
-        for entity in entities:
+    def _copy_common_services(self, entity: Entity):
+        for service in entity.services:
+            if service in self.common_service_manager.services:
+                logger.debug(f"Copying service {service} to {entity.name}")
+                entity.service_manager.services[service] = (
+                    self.common_service_manager.services[service]
+                )
+
+    def _register_task_actions(self, entity: Entity):
+        for service in entity.service_manager.services.values():
+            for task in service.get_tasks():
+                if hasattr(task, "requested_actions"):
+                    for action in task.requested_actions:
+                        a = entity.get_action(action)
+                        if callable(a[1]):
+                            task.register_action(action, *a)
+
+    def load_entities(self, entity_paths: list[Path]):
+        for entity in entity_paths:
             E = Entity.load_from_yaml(entity)
             self.entities[E.name] = E
 
-            # copy common services from main service manager
-            for service in E.services:
-                if service in self.service_manager.services:
-                    logger.debug(f"Copying service {service} to {E.name}")
-                    E.service_manager.services[service] = self.service_manager.services[
-                        service
-                    ]
-
-            # all tasks need to register any actions the Entity Manager offers
-            for service in E.service_manager.services.values():
-                for task in service.get_tasks():
-                    if hasattr(task, "requested_actions"):
-                        for action in task.requested_actions:
-                            a = self.get_action(action)
-                            if callable(a[1]):
-                                task.register_action(action, *a)
+            self._copy_common_services(E)
+            self._register_task_actions(E)
 
         logger.debug(f"Loaded entities {self.entities.keys()}")
 
@@ -74,14 +77,16 @@ class EntityManager(ActionDataclassMixin):
 
         return workflows
 
-    def run_workflow(self, workflow: str, entity: str = None):
+    def run_workflow(
+        self, workflow: str, step_options: dict = None, entity: str = None
+    ):
         if entity is None:
             for entity, wf in self.get_workflows():
                 if wf == workflow:
-                    return self.get_entity(entity).run_workflow(workflow)
+                    return self.get_entity(entity).run_workflow(workflow, step_options)
         else:
             if entity in self.entities:
-                return self.get_entity(entity).run_workflow(workflow)
+                return self.get_entity(entity).run_workflow(workflow, step_options)
 
     def get_entity(self, entity: str) -> Optional[Entity]:
         if entity in self.entities:

@@ -32,7 +32,7 @@ class Request(JSONWizard):
             raise ValueError("Request must have a workflow.")
 
     def __str__(self):
-        return f"Request(id={self.id}, workflow={self.workflow}, args={self.args})"
+        return f"Request(id={self.id}, workflow={self.workflow}, task={self.task}, options={self.step_options})"
 
 
 @dataclass

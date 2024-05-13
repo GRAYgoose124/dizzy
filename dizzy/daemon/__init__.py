@@ -8,6 +8,7 @@ from .protocol import Request, Response
 
 from . import settings
 
+
 __all__ = [
     "Server",
     "CLICient",

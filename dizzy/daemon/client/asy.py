@@ -52,10 +52,11 @@ class SimpleAsyncClient:
                 raise e
 
         self.socket.send_json(request)
-        # now await response from recv_multipart which returns a list
         response = await self.socket.recv_multipart()
+
         logger.debug(f"Received raw response: {response}")
         message = response[0]
+
         return json.loads(message.decode())
 
     def _process_response(self, request, response):

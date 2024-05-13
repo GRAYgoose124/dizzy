@@ -11,7 +11,7 @@ class TestServices:
         assert all(
             [
                 s.name in ["uno", "project", "status"]
-                for s in self.em.sm.services.values()
+                for s in self.em.csm.services.values()
             ]
         )
 

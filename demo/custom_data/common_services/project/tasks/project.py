@@ -101,3 +101,9 @@ class WriteProjectFiles(ProjectTask):
 
             with open(path, "w") as f:
                 f.write(file["content"])
+
+
+
+# Runs on server, but requested by client, client must have the file, we will open a new connection to the client
+class UploadProjectFiles(Task):
+    pass

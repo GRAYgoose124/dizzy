@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict
 import logging
 from pathlib import Path
+from typing import Optional
 
 import yaml
 
@@ -81,7 +82,11 @@ class Entity(ActionDataclassMixin):
 
         return service_files
 
-    def run_workflow(self, workflow: str):
+    def run_workflow(
+        self,
+        workflow: str,
+        step_options: Optional[dict[dict]] = None,
+    ):
         """A workflow is a set of non-dependent tasks made dependent by the workflow."""
         logger.debug(f"Running workflow {workflow} for entity {self.name}")
 
@@ -94,6 +99,13 @@ class Entity(ActionDataclassMixin):
             if tasks[i - 1] in ctx["workflow"]["result"]:
                 ctx["workflow"]["input"][task] = ctx["workflow"]["result"][tasks[i - 1]]
 
-            ctx["workflow"]["result"][task] = self.service_manager.run_task(task, ctx)
+            if step_options is not None:
+                args = step_options[task]
+            else:
+                args = None
+
+            ctx["workflow"]["result"][task] = self.service_manager.run_task(
+                task, args=args, ctx=ctx
+            )
 
         return ctx

@@ -13,6 +13,7 @@
 - [ ] Composites: workflows on the fly with a simple DSL for result composition.
 - [ ] Datagen (Entities, service folders, task folders - all yml files, etc)
 - [ ] Project
+- [ ] Definable Entity and Service Actions (like Tasks)
 ## Maybe
 - discover all workflows for client 
 - allow ctx return from task? (semi-bug - circular ref if return ctx)

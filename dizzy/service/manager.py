@@ -92,26 +92,35 @@ class ServiceManager(ActionDataclassMixin):
 
         return tasks
 
-    def run_tasklist(self, tasklist: list[Task], ctx: dict = None) -> dict:
+    def run_tasklist(
+        self, tasklist: list[Task], args: dict = None, ctx: dict = None
+    ) -> dict:
         """Run a tasklist in a context"""
         logger.debug(f"Running {tasklist=}")
 
         ctx = ctx or {}
         for task in tasklist:
             this_tasks_args = {dep: ctx[dep].pop() for dep in task.dependencies}
+            this_tasks_args.update(args)
 
             logger.debug(f"-- Running task {task.name}, {ctx=}")
             result = task.run(this_tasks_args)
 
             ctx.setdefault(task.name, []).append(result)
 
-        final = ctx[tasklist[-1].name].pop()
+        try:
+            final = ctx[tasklist[-1].name].pop()
+        except IndexError:
+            final = None
+            logger.error(
+                f"Tasklist was empty, {tasklist=}, {ctx=} - did you define the requested Task?"
+            )
         logger.debug(f"Tasklist {final=}, {ctx=} (should be empty)")
         return final
 
-    def run_task(self, task: str, ctx: dict = None) -> dict:
+    def run_task(self, task: str, args: dict = None, ctx: dict = None) -> dict:
         """Run a task in a context"""
         logger.debug(f"Running {task=}")
 
         tasklist = self.resolve_task_dependencies(task)
-        return self.run_tasklist(tasklist, ctx)
+        return self.run_tasklist(tasklist, args, ctx)

@@ -3,4 +3,4 @@ entity:
   description: The master entity.
   services: ["alef", "project"]
   workflows:
-    process_data: "IngestData -> CreateProject -> ProcessData -> AnalyzeResults"
+    process_data: "CreateProject -> IngestData -> ProcessData -> WriteProjectFiles"
