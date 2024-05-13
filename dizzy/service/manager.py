@@ -87,6 +87,8 @@ class ServiceManager(ActionDataclassMixin):
             return [t]
 
         for dep in t.dependencies:
+            if dep == task:
+                continue
             tasks = self.resolve_task_dependencies(dep) + tasks
         tasks.append(t)
 
