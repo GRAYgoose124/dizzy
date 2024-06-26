@@ -55,9 +55,12 @@ class SettingsManager:
         #     env_var = os.getenv("DIZZY_DATA_ROOT")
         #     env_root = Path(env_var) if env_var else None
         if not data_root:
-            env_root = Path(os.getenv("DIZZY_DATA_ROOT"))
+            env_root = None
+            ENV_ROOT = os.getenv("DIZZY_DATA_ROOT")
+            if ENV_ROOT:
+                env_root = Path(os.getenv("DIZZY_DATA_ROOT"))
             if not env_root:
-                raise ValueError("write_to_disk requires a data_root.")
+                data_root = Path(__file__).parent.parent / "default_data"
             else:
                 data_root = env_root
                 logger.debug(f"Using data_root from DIZZY_DATA_ROOT: {data_root}")

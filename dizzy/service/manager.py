@@ -22,18 +22,25 @@ class ServiceManager(ActionDataclassMixin):
     def __post_init__(self):
         self.register_action("service_info", "", self.get_services)
 
+    def _register_task_actions(self, task: Task):
+        if hasattr(task, "requested_actions"):
+            for action in task.requested_actions:
+                a = self.get_action(action)
+                if callable(a[1]):
+                    task.register_action(action, *a)
+
     def load_services(self, services: list[Path]):
         for service in services:
+            if not service.exists():
+                logger.error(f"Service file {service} does not exist.")
+                continue
+
             S = Service.load_from_yaml(service)
             self.services[S.name] = S
 
             # All tasks need to register any actions the service manager offers
             for task in S.get_tasks():
-                if hasattr(task, "requested_actions"):
-                    for action in task.requested_actions:
-                        a = self.get_action(action)
-                        if callable(a[1]):
-                            task.register_action(action, *a)
+                self._register_task_actions(task)
 
         logger.debug(f"SM: Loaded services {self.services}.")
 
@@ -103,7 +110,8 @@ class ServiceManager(ActionDataclassMixin):
         ctx = ctx or {}
         for task in tasklist:
             this_tasks_args = {dep: ctx[dep].pop() for dep in task.dependencies}
-            this_tasks_args.update(args)
+            if args is not None:
+                this_tasks_args.update(args)
 
             logger.debug(f"-- Running task {task.name}, {ctx=}")
             result = task.run(this_tasks_args)

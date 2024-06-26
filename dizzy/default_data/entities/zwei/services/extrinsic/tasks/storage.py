@@ -1,6 +1,10 @@
 import json
 from dizzy import Task
-from dizzy.daemon import data_root
+from dizzy.daemon.settings import SettingsManager
+
+SM = SettingsManager()
+
+data_root = SM.settings.data_root
 
 
 class Store(Task):

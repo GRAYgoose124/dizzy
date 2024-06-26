@@ -54,8 +54,9 @@ class TestDaemonEntityManager:
         # assert self.em.service_manager.find_task("D").possible_actions in [
         #     "entity_info",
         #     "service_info",
-        # ]i
+        # ]
         D = self.em.find_task("D")
+
         assert all(
             action in D.possible_actions for action in ["entity_info", "service_info"]
         )

@@ -2,7 +2,11 @@ import pytest
 from pathlib import Path
 
 from dizzy import ServiceManager, Service
-from dizzy.daemon.settings import common_services
+from dizzy.daemon.settings import SettingsManager
+
+SM = SettingsManager()
+
+common_services = SM.settings.common_services
 
 
 class TestServiceManager:

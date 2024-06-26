@@ -6,8 +6,11 @@ from .client.asy import SimpleAsyncClient
 
 from .protocol import Request, Response
 
-from . import settings
+from .settings import SettingsManager
 
+SM = SettingsManager()
+
+all_entities = SM.settings.all_entities
 
 __all__ = [
     "Server",

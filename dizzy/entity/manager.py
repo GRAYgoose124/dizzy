@@ -40,6 +40,16 @@ class EntityManager(ActionDataclassMixin):
 
     def load(self, services: dict, entities: dict):
         self.csm.load_services(services.values())
+        # now register actions for the common service manager's tasks
+        # TODO: all location of tasks need to check common services too.
+        for service in self.csm.services.values():
+            for task in service.get_tasks():
+                if hasattr(task, "requested_actions"):
+                    for action in task.requested_actions:
+                        a = self.get_action(action)
+                        if callable(a[1]):
+                            task.register_action(action, *a)
+
         self.load_entities(entities.values())
 
     def _copy_common_services(self, entity: Entity):

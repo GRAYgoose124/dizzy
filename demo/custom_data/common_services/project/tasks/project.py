@@ -4,7 +4,11 @@ from pathlib import Path
 from uuid import uuid4
 
 from dizzy import Task
-from dizzy.daemon.settings import data_root
+from dizzy.daemon.settings import SettingsManager
+
+SM = SettingsManager()
+
+data_root = SM.settings.data_root
 
 PROJECT_ROOT = data_root.parent / "projects"
 
@@ -101,7 +105,6 @@ class WriteProjectFiles(ProjectTask):
 
             with open(path, "w") as f:
                 f.write(file["content"])
-
 
 
 # Runs on server, but requested by client, client must have the file, we will open a new connection to the client
