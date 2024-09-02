@@ -86,6 +86,7 @@ class Service(ActionDataclassMixin):
 
     def get_task(self, name: str) -> Task:
         if name not in self.__loaded_tasks:
+            logger.error(f"Task {name} not loaded")
             if name in self.tasks:
                 raise ValueError(f"Task {name} not loaded")
             raise KeyError(f"Task {name} not found in service {self.name}")

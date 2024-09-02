@@ -99,9 +99,10 @@ class Entity(ActionDataclassMixin):
             if tasks[i - 1] in ctx["workflow"]["result"]:
                 ctx["workflow"]["input"][task] = ctx["workflow"]["result"][tasks[i - 1]]
 
-            if step_options is not None:
+            if step_options is not None and task in step_options:
                 args = step_options[task]
             else:
+                logger.warning(f"No step options for {task}, passing empty args")
                 args = None
 
             ctx["workflow"]["result"][task] = self.service_manager.run_task(

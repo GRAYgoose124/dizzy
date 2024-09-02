@@ -111,6 +111,7 @@ class SimpleRequestServer:
         try:
             ctx = self.entity_manager.run_workflow(workflow, step_options, entity)
         except KeyError as e:
+            logger.exception(e)
             response.add_error("KeyError", str(e))
             ctx = {}
 

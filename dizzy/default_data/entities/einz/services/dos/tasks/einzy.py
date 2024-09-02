@@ -5,8 +5,9 @@ class EinzyA(Task):
     """A task"""
 
     @staticmethod
-    def run():
-        return "A"
+    def run(ctx):
+        ctx["EinzyA"] = "A"
+        return "EinzyA"
 
 
 class EinzyB(Task):
@@ -15,8 +16,9 @@ class EinzyB(Task):
     dependencies = ["EinzyA"]
 
     @staticmethod
-    def run(EinzyA):
-        return f"{EinzyA}B"
+    def run(ctx):
+        ctx["B"] = f"{ctx['EinzyA']}B"
+        return f"{ctx['EinzyA']}B"
 
 
 class EinzInfo(Task):
@@ -24,14 +26,15 @@ class EinzInfo(Task):
 
     dependencies = ["Info"]
 
-    @staticmethod
-    def run(Info):
-        return f"Einz:{Info}"
+    def run(self, ctx):
+        ctx["EinzInfo"] = f"{ctx['Info']}"
+
+        return ctx["EinzInfo"]
 
 
 class NotUsed(Task):
     """Ignored"""
 
     @staticmethod
-    def run():
+    def run(ctx):
         return "Not used"
