@@ -44,9 +44,9 @@ class SimpleAsyncClient:
             self._process_response(request, response)
 
     async def send_request(self, request):
-        if not isinstance(request, self.protocol.request):
+        if not isinstance(request, self.protocol.Request):
             try:
-                _ = self.protocol.request(**request)
+                _ = self.protocol.Request(**request)
             except Exception as e:
                 logger.error(f"Invalid request: {request}")
                 raise e
@@ -60,8 +60,8 @@ class SimpleAsyncClient:
         return json.loads(message.decode())
 
     def _process_response(self, request, response):
-        request = self.protocol.request(**request)
-        response = self.protocol.response(**response)
+        request = self.protocol.Request(**request)
+        response = self.protocol.Response(**response)
 
         self.history.append((request, response))
         logger.info(f"Received response for request: {request}")

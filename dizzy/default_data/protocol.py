@@ -12,6 +12,7 @@ class Request(BaseRequest):
     def __str__(self):
         return f"Request(id={self.id}, workflow={self.workflow}, task={self.task}, options={self.options})"
 
+
 class Response(BaseResponse[Request]):
     ctx: Dict[str, Any] = Field(default_factory=dict)
 
