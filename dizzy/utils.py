@@ -1,5 +1,6 @@
 import importlib.util
 import logging
+import os
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -64,3 +65,33 @@ class ActionDataclassMixin:
     @property
     def possible_actions(self) -> list[str]:
         return list(self.registered_actions.keys())
+    
+
+def load_dizzy_proto_class():
+    DIZZY_DATA_ROOT = os.getenv("DIZZY_DATA_ROOT")
+    if not DIZZY_DATA_ROOT:
+        logger.error("DIZZY_DATA_ROOT environment variable is not set")
+        raise EnvironmentError("DIZZY_DATA_ROOT environment variable is not set")
+
+    protocol_py_file = Path(DIZZY_DATA_ROOT) / "protocol.py"
+    if not protocol_py_file.exists():
+        logger.error(f"protocol.py not found at {protocol_py_file}")
+        raise FileNotFoundError(f"protocol.py not found at {protocol_py_file}")
+
+    logger.debug(f"Loading protocol.py from {protocol_py_file}")
+
+    try:
+        spec = importlib.util.spec_from_file_location("protocol", protocol_py_file)
+        protocol_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(protocol_module)
+        logger.debug(f"Loaded protocol module: {protocol_module}")
+    except Exception as e:
+        logger.error(f"Failed to load protocol module: {e}")
+        raise
+
+    if not hasattr(protocol_module, 'Protocol'):
+        logger.error(f"'Protocol' class not found in {protocol_py_file}")
+        raise AttributeError(f"'Protocol' class not found in {protocol_py_file}")
+
+    logger.debug(f"Protocol class loaded successfully from {protocol_py_file}")
+    return protocol_module.Protocol

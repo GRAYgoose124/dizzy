@@ -6,8 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from ..protocol import Request, Response
-
+from ..abstract_protocol import BaseProtocol
 
 class SimpleAsyncClient:
     _instance = None
@@ -19,7 +18,8 @@ class SimpleAsyncClient:
 
         return cls._instance
 
-    def __init__(self, address="localhost", port=5555, protocol_dir=None):
+    def __init__(self, protocol: BaseProtocol, address="localhost", port=5555):
+        self.protocol = protocol
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(f"tcp://{address}:{port}")
@@ -43,10 +43,10 @@ class SimpleAsyncClient:
             response = await self.send_request(request)
             self._process_response(request, response)
 
-    async def send_request(self, request: Request | dict):
-        if not isinstance(request, Request):
+    async def send_request(self, request):
+        if not isinstance(request, self.protocol.request):
             try:
-                _ = Request(**request)
+                _ = self.protocol.request(**request)
             except Exception as e:
                 logger.error(f"Invalid request: {request}")
                 raise e
@@ -60,8 +60,8 @@ class SimpleAsyncClient:
         return json.loads(message.decode())
 
     def _process_response(self, request, response):
-        request = Request(**request)
-        response = Response(**response)
+        request = self.protocol.request(**request)
+        response = self.protocol.response(**response)
 
         self.history.append((request, response))
         logger.info(f"Received response for request: {request}")

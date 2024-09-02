@@ -6,12 +6,18 @@ import sys
 import zmq
 import asyncio
 
-from . import Server, CLICient, data_root
+from . import Server, CLICient, SettingsManager
+from ..utils import load_dizzy_proto_class
+
+data_root = SettingsManager(write_to_disk=True).data_root
+
+DizzyProtocol = load_dizzy_proto_class()
+
 
 
 async def server(port=5555):
     try:
-        server = Server(port=port)
+        server = Server(DizzyProtocol, port=port)
     except zmq.error.ZMQError as e:
         print(e)
         sys.exit(1)

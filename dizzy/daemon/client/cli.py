@@ -3,12 +3,9 @@ import zmq
 import json
 import os
 
-
 if os.name != "nt":
     import readline
 import logging
-
-from ..protocol import Request, Response
 
 
 logger = logging.getLogger(__name__)

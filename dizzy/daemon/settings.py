@@ -1,3 +1,4 @@
+import importlib
 import os
 from pathlib import Path
 from dataclasses import dataclass, fields
@@ -73,6 +74,7 @@ class SettingsManager:
                 raise ValueError("write_to_disk requires a data_root set.")
 
             if not data_root.exists():
+                print(f"Creating data_root: {data_root}")
                 logger.debug(f"Creating data_root: {data_root}")
                 data_root.mkdir(parents=True)
                 packaged_root = Path(__file__).parent.parent / "default_data"

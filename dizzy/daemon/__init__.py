@@ -4,19 +4,23 @@ from .server.__main__ import DaemonEntityManager
 from .client.cli import SimpleCLIClient as CLICient
 from .client.asy import SimpleAsyncClient
 
-from .protocol import Request, Response
+from .abstract_protocol import BaseRequest, BaseResponse
 
 from .settings import SettingsManager
 
-SM = SettingsManager()
+try:
+    SM = SettingsManager()
+    all_entities = SM.settings.all_entities
+except Exception as e:
+    print(f"Error initializing SettingsManager: {e}")
+    SM = None
 
-all_entities = SM.settings.all_entities
 
 __all__ = [
     "Server",
     "CLICient",
     "SimpleAsyncClient",
     "DaemonEntityManager",
-    "Request",
-    "Response",
+    "BaseRequest",
+    "BaseResponse",
 ]

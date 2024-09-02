@@ -6,8 +6,8 @@ import zmq
 import zmq.asyncio
 
 from dizzy import EntityManager
+from ..abstract_protocol import BaseProtocol
 from ..settings import SettingsManager
-from ..protocol import Response, Request
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,8 @@ class DaemonEntityManager(EntityManager):
 
 
 class SimpleRequestServer:
-    def __init__(self, address="*", port=5555, protocol_dir=None):
+    def __init__(self, protocol: BaseProtocol, address="*", port=5555, protocol_dir=None):
+        self.protocol = protocol
         self.context = zmq.asyncio.Context()
         self.frontend = self.context.socket(zmq.ROUTER)
         self.frontend.bind(f"tcp://{address}:{port}")
@@ -65,15 +66,15 @@ class SimpleRequestServer:
         logger.debug(f"Received request: {message}")
 
         try:
-            request = Request(**json.loads(message.decode()))
-            response = Response.from_request(identity, request)
+            request = self.protocol.Request(**json.loads(message.decode()))
+            response = self.protocol.Response.from_request(identity, request)
 
         except (json.JSONDecodeError, UnicodeDecodeError):
-            response = Response.from_request(identity, None)
+            response = self.protocol.Response.from_request(identity, None)
             request = None
             logger.debug(f"Invalid JSON: {message}")
         except TypeError as e:
-            response = Response.from_request(identity, None)
+            response = self.protocol.Response.from_request(identity, None)
             request = None
             logger.debug(f"Invalid request: {e}")
 
@@ -89,7 +90,7 @@ class SimpleRequestServer:
             "completed" if len(response.errors) == 0 else "finished_with_errors"
         )
 
-        response_data = response.to_json().encode()
+        response_data = response.model_dump_json().encode()
 
         logger.debug(f"\n{request}\n\nreturned\n\n{response}\n")
         await self.frontend.send_multipart([identity, b"", response_data])
@@ -97,7 +98,7 @@ class SimpleRequestServer:
     def handle_entity_workflow(self, request, response):
         entity = request.entity
         workflow = request.workflow
-        step_options = request.step_options
+        step_options = request.options
 
         if not workflow:
             response.add_error("BadWorkflow", "Invalid JSON, no workflow")
