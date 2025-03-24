@@ -84,7 +84,7 @@ class BaseProtocol[Rq: BaseRequest, Rs: BaseResponse[Rq]](BaseModel):
 
         # use importlib to load the protocol from protocol_dir/protocol.py using spec
         spec = importlib.util.spec_from_file_location(
-            "protocol", protocol_dir / "protocol.py"
+            "protocol", Path(protocol_dir) / "protocol.py"
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -92,7 +92,7 @@ class BaseProtocol[Rq: BaseRequest, Rs: BaseResponse[Rq]](BaseModel):
             module, "DizzyProtocol"
         ), f"Protocol module must have a DizzyProtocol class"
 
-        return module.DizzyProtocol
+        return module.DizzyProtocol()
 
 
 class DefaultRequest(BaseRequest):

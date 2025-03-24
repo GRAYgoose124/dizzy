@@ -33,13 +33,7 @@ class DaemonEntityManager(EntityManager):
 
 
 class SimpleRequestServer:
-    def __init__(
-        self,
-        protocol: BaseProtocol = DefaultProtocol,
-        address="*",
-        port=5555,
-        protocol_dir=None,
-    ):
+    def __init__(self, protocol: BaseProtocol = DefaultProtocol, address="*", port=5555, protocol_dir=None):
         self._check_and_load_protocol(protocol, protocol_dir)
 
         self.context = zmq.asyncio.Context()
@@ -85,7 +79,7 @@ class SimpleRequestServer:
 
     def _generate_uuid(self):
         return uuid.uuid4().hex
-
+    
     async def handle_request(self, identity: str, message: bytes):
         logger.debug(f"Received request: {message}")
         if identity not in self.clients:
@@ -115,6 +109,7 @@ class SimpleRequestServer:
 
         self.clients[identity]["transactions"].append((request, response))
         self.clients[identity]["transaction_uuids"].append(request.id)
+        
 
         unhandled = True
         if request.entity is not None:
@@ -136,9 +131,7 @@ class SimpleRequestServer:
             response.add_error("SerializationError", str(e))
             response_data = response.model_dump_json().encode()
 
-        logger.debug(
-            f"\n\n{request.model_dump_json(indent=2)}\n\nreturned\n\n{response.model_dump_json(indent=2)}\n"
-        )
+        logger.debug(f"\n\n{request.model_dump_json(indent=2)}\n\nreturned\n\n{response.model_dump_json(indent=2)}\n")
         await self.frontend.send_multipart([identity, b"", response_data])
 
     def handle_entity_workflow(self, request, response):
@@ -212,7 +205,6 @@ class SimpleRequestServer:
 
         if isinstance(protocol, type):
             self.protocol = protocol()
-
-        assert isinstance(
-            self.protocol, BaseProtocol
-        ), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
+            
+        assert isinstance(self.protocol, BaseProtocol), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
+        

@@ -82,42 +82,38 @@ def handle_entity_workflow(request, response, entity_manager: LocalEntityManager
     response.set_result(ctx["workflow"]["result"] if "workflow" in ctx else None)
 
 
-def main(protocol_dir: Optional[Path] = None):
-    """Main entry point for the local JSON processor."""
-    # Set up logging
-    logging.basicConfig(level=logging.INFO)
-
-    # Initialize protocol and entity manager
-    protocol = DefaultProtocol()
-    entity_manager = LocalEntityManager(protocol_dir)
-
-    # Process stdin line by line
-    for line in sys.stdin:
-        try:
-            request_data = json.loads(line)
-            response_data = handle_request(request_data, protocol, entity_manager)
-            print(json.dumps(response_data))
-            sys.stdout.flush()  # Ensure output is written immediately
-        except json.JSONDecodeError as e:
-            error_response = {"status": "error", "errors": {"InvalidJSON": [str(e)]}}
-            print(json.dumps(error_response))
-            sys.stdout.flush()
-        except Exception as e:
-            logger.exception(e)
-            error_response = {
-                "status": "error",
-                "errors": {"UnexpectedError": [str(e)]},
-            }
-            print(json.dumps(error_response))
-            sys.stdout.flush()
-
-
-if __name__ == "__main__":
+def argparser():
     import argparse
 
     parser = argparse.ArgumentParser(description="Process JSON requests from stdin")
     parser.add_argument(
         "--protocol-dir", type=Path, help="Directory containing protocol configuration"
     )
-    args = parser.parse_args()
-    main(args.protocol_dir)
+    return parser
+
+
+def main():
+    """Main entry point for the local JSON processor."""
+    logging.basicConfig(level=logging.DEBUG)
+
+    args = argparser().parse_args()
+    protocol_dir = args.protocol_dir
+
+    # Initialize protocol and entity manager
+    if protocol_dir is None:
+        logger.debug("Using default protocol")
+        protocol = DefaultProtocol()
+    else:
+        logger.debug(f"Loading protocol from {protocol_dir}")
+        protocol = BaseProtocol.load(protocol_dir)
+
+    entity_manager = LocalEntityManager(protocol_dir)
+
+    # Process stdin json object
+    request_data = json.load(sys.stdin)
+    response_data = handle_request(request_data, protocol, entity_manager)
+    print(json.dumps(response_data))
+
+
+if __name__ == "__main__":
+    main()
