@@ -1,5 +1,5 @@
 class IOCoupler:
-    """ Interfaces two tasks by routing their IO signals as context data """
+    """Interfaces two tasks by routing their IO signals as context data"""
 
     def __init__(self, task1: Task, task2: Task):
         self.task1 = task1

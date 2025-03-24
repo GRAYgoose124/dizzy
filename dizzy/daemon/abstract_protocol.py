@@ -5,7 +5,17 @@ from pathlib import Path
 import uuid
 from dataclass_wizard import JSONWizard
 
-Status = Literal["created", "pending", "incomplete", "complete", "error", "finished_with_errors", "cancelled", "stopped"]
+Status = Literal[
+    "created",
+    "pending",
+    "incomplete",
+    "complete",
+    "error",
+    "finished_with_errors",
+    "cancelled",
+    "stopped",
+]
+
 
 # TODO: Make id bytes
 class BaseRequest(BaseModel):
@@ -19,8 +29,8 @@ class BaseRequest(BaseModel):
 
     def set_option(self, key: str, value: Any):
         self.step_options[key] = value
-    
-    
+
+
 class BaseResponse[Rq: BaseRequest](BaseModel):
     id: Optional[str] = None
     request: Rq
@@ -60,6 +70,7 @@ class BaseResponse[Rq: BaseRequest](BaseModel):
         self = cls(request=request, status=status)
         return self
 
+
 class BaseProtocol[Rq: BaseRequest, Rs: BaseResponse[Rq]](BaseModel):
     Request: Type[Rq]
     Response: Type[Rs]
@@ -72,12 +83,17 @@ class BaseProtocol[Rq: BaseRequest, Rs: BaseResponse[Rq]](BaseModel):
         import importlib
 
         # use importlib to load the protocol from protocol_dir/protocol.py using spec
-        spec = importlib.util.spec_from_file_location("protocol", protocol_dir / "protocol.py")
+        spec = importlib.util.spec_from_file_location(
+            "protocol", protocol_dir / "protocol.py"
+        )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        assert hasattr(module, "DizzyProtocol"), f"Protocol module must have a DizzyProtocol class"
-        
+        assert hasattr(
+            module, "DizzyProtocol"
+        ), f"Protocol module must have a DizzyProtocol class"
+
         return module.DizzyProtocol
+
 
 class DefaultRequest(BaseRequest):
     entity: Optional[str] = None
@@ -88,11 +104,13 @@ class DefaultRequest(BaseRequest):
     def __str__(self):
         return f"Request(id={self.id}, workflow={self.workflow}, task={self.task}, step_options={self.step_options})"
 
+
 class DefaultResponse(BaseResponse[DefaultRequest]):
     ctx: Dict[str, Any] = Field(default_factory=dict)
 
     def update_ctx(self, ctx: dict):
         self.ctx.update(ctx)
+
 
 class DefaultProtocol(BaseProtocol[DefaultRequest, DefaultResponse]):
     Request: Type[DefaultRequest] = DefaultRequest

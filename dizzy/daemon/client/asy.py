@@ -4,9 +4,11 @@ import zmq.asyncio
 import asyncio
 import logging
 from pathlib import Path
+
 logger = logging.getLogger(__name__)
 
 from ..abstract_protocol import BaseProtocol, DefaultProtocol
+
 
 class SimpleAsyncClient:
     _instance = None
@@ -18,7 +20,13 @@ class SimpleAsyncClient:
 
         return cls._instance
 
-    def __init__(self, protocol: BaseProtocol = DefaultProtocol, address="localhost", port=5555, protocol_dir: Path = None):
+    def __init__(
+        self,
+        protocol: BaseProtocol = DefaultProtocol,
+        address="localhost",
+        port=5555,
+        protocol_dir: Path = None,
+    ):
         self._check_and_load_protocol(protocol, protocol_dir)
 
         self.context = zmq.asyncio.Context()
@@ -62,7 +70,7 @@ class SimpleAsyncClient:
         logger.debug(f"Received raw response: {message}")
 
         return self.protocol.Response.model_validate_json(message)
-    
+
     def _process_response(self, request, response):
         request = self.protocol.Request(**request)
         response = self.protocol.Response(**response)
@@ -106,6 +114,7 @@ class SimpleAsyncClient:
 
         if isinstance(protocol, type):
             self.protocol = protocol()
-            
-        assert isinstance(self.protocol, BaseProtocol), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
-        
+
+        assert isinstance(
+            self.protocol, BaseProtocol
+        ), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"

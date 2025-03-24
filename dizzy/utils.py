@@ -65,7 +65,7 @@ class ActionDataclassMixin:
     @property
     def possible_actions(self) -> list[str]:
         return list(self.registered_actions.keys())
-    
+
 
 def load_dizzy_proto_class():
     DIZZY_DATA_ROOT = os.getenv("DIZZY_DATA_ROOT")
@@ -89,7 +89,7 @@ def load_dizzy_proto_class():
         logger.error(f"Failed to load protocol module: {e}")
         raise
 
-    if not hasattr(protocol_module, 'Protocol'):
+    if not hasattr(protocol_module, "Protocol"):
         logger.error(f"'Protocol' class not found in {protocol_py_file}")
         raise AttributeError(f"'Protocol' class not found in {protocol_py_file}")
 

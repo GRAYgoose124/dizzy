@@ -14,7 +14,6 @@ data_root = SettingsManager(write_to_disk=True).data_root
 DizzyProtocol = load_dizzy_proto_class()
 
 
-
 async def server(port=5555):
     try:
         server = Server(DizzyProtocol, port=port)
@@ -73,8 +72,11 @@ def main():
 
     args = parser.parse_args()
     print("Using data root:", data_root)
-    
-    logging.basicConfig(level=getattr(logging, args.verbosity), format="[%(levelname)s] %(name)s:%(lineno)d: %(message)s")
+
+    logging.basicConfig(
+        level=getattr(logging, args.verbosity),
+        format="[%(levelname)s] %(name)s:%(lineno)d: %(message)s",
+    )
 
     if args.mode == "server":
         add_file_handler(data_root / "server.log")

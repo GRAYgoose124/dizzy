@@ -93,12 +93,14 @@ class EntityManager(ActionDataclassMixin):
         if entity_name in self.entities:
             return self.get_entity(entity_name).run_workflow(workflow, step_options)
         else:
-            logger.info(f"Entity={entity_name} not found. Searching for {workflow} in all entities.")
+            logger.info(
+                f"Entity={entity_name} not found. Searching for {workflow} in all entities."
+            )
             for e, wf in self.get_workflows():
                 if wf == workflow:
                     return self.get_entity(e).run_workflow(workflow, step_options)
             logger.warning(f"Workflow={workflow} not found in any entity.")
-    
+
     def get_entity(self, entity: str) -> Optional[Entity]:
         if entity in self.entities:
             return self.entities[entity]
@@ -111,7 +113,7 @@ class EntityManager(ActionDataclassMixin):
             for service in entity.service_manager.services.values():
                 if task in service.tasks:
                     return service.get_task(task)
-                
+
         logger.warning(f"Task={task} not found in any entity.")
         return None
 
@@ -119,7 +121,7 @@ class EntityManager(ActionDataclassMixin):
         for entity in self.entities.values():
             if service in entity.service_manager.services:
                 return entity.service_manager.get_service(service)
-        
+
         logger.warning(f"Service={service} not found in any entity.")
         return None
 
@@ -128,7 +130,7 @@ class EntityManager(ActionDataclassMixin):
             for service in entity.service_manager.services.values():
                 if task in service.tasks:
                     return entity
-        
+
         logger.warning(f"Owner entity for task={task} not found in any entity.")
         return None
 
@@ -137,7 +139,7 @@ class EntityManager(ActionDataclassMixin):
             for service in entity.service_manager.services.values():
                 if task in service.tasks:
                     return entity.service_manager.get_service(service)
-        
+
         logger.warning(f"Owner service for task={task} not found in any entity.")
         return None
 

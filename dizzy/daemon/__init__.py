@@ -18,9 +18,7 @@ __all__ = [
     "SimpleRequestServer",
     "SimpleCLIClient",
     "SimpleAsyncClient",
-
     "DaemonEntityManager",
-
     "BaseRequest",
     "BaseResponse",
     "BaseProtocol",

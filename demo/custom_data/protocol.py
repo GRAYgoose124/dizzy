@@ -13,11 +13,13 @@ class DefaultRequest(BaseRequest):
     def __str__(self):
         return f"Request(id={self.id}, workflow={self.workflow}, task={self.task}, step_options={self.step_options})"
 
+
 class DefaultResponse(BaseResponse[DefaultRequest]):
     ctx: Dict[str, Any] = Field(default_factory=dict)
 
     def update_ctx(self, ctx: dict):
         self.ctx.update(ctx)
+
 
 class DefaultProtocol(BaseProtocol[DefaultRequest, DefaultResponse]):
     Request: Type[DefaultRequest] = DefaultRequest

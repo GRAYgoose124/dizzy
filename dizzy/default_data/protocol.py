@@ -1,7 +1,13 @@
 from pydantic import Field, validator
 from typing import Any, Dict, Optional, List
 
-from dizzy.daemon.abstract_protocol import BaseRequest, BaseResponse, Status, BaseProtocol
+from dizzy.daemon.abstract_protocol import (
+    BaseRequest,
+    BaseResponse,
+    Status,
+    BaseProtocol,
+)
+
 
 class Request(BaseRequest):
     entity: Optional[str] = None
@@ -31,9 +37,8 @@ class Response(BaseResponse[Request]):
             request=request,
             id=request.id,
             ctx=request.ctx,
-            status=status
+            status=status,
         )
-    
-# TODO: Fix the weird generic + passing of Request and Response
-DizzyProtocol = BaseProtocol[Request, Response]
-Protocol = DizzyProtocol(Request=Request, Response=Response)
+
+
+DizzyProtocol = BaseProtocol[Request, Response](Request=Request, Response=Response)

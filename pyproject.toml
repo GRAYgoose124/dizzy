@@ -25,6 +25,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 dizzy = "dizzy.daemon.__main__:main"
+dizzyless = "dizzy.daemon.less.__main__:main"
 dizgen = "dizzy.daemon.dta_gen:main"
 
 depres = "depres.__main__:main"

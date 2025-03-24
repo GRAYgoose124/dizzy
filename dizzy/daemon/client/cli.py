@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: Use protocol, move out of daemon into demo probably
 
+
 class SimpleCLIClient:
     def __init__(self, address="localhost", port=5555):
         self.context = zmq.Context()
