@@ -22,3 +22,6 @@ class DefaultResponse(BaseResponse[DefaultRequest]):
 class DefaultProtocol(BaseProtocol[DefaultRequest, DefaultResponse]):
     Request: Type[DefaultRequest] = DefaultRequest
     Response: Type[DefaultResponse] = DefaultResponse
+
+
+DizzyProtocol = DefaultProtocol

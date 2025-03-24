@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Any, Dict, Generic, List, Literal, Optional, Type
+from pathlib import Path
 import uuid
 from dataclass_wizard import JSONWizard
 
@@ -66,7 +67,17 @@ class BaseProtocol[Rq: BaseRequest, Rs: BaseResponse[Rq]](BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    @classmethod
+    def load(cls, protocol_dir: Path):
+        import importlib
 
+        # use importlib to load the protocol from protocol_dir/protocol.py using spec
+        spec = importlib.util.spec_from_file_location("protocol", protocol_dir / "protocol.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        assert hasattr(module, "DizzyProtocol"), f"Protocol module must have a DizzyProtocol class"
+        
+        return module.DizzyProtocol
 
 class DefaultRequest(BaseRequest):
     entity: Optional[str] = None

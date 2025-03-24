@@ -2,9 +2,10 @@ import asyncio
 import json
 import logging
 import uuid
+import importlib
 import zmq
 import zmq.asyncio
-
+from pathlib import Path
 from dizzy import EntityManager
 from ..abstract_protocol import BaseProtocol, DefaultProtocol
 from ..settings import SettingsManager
@@ -31,13 +32,12 @@ class DaemonEntityManager(EntityManager):
         logger.debug(f"Activate protocol directory: {self.protocol_dir}")
 
 
+
+
 class SimpleRequestServer:
     def __init__(self, protocol: BaseProtocol = DefaultProtocol, address="*", port=5555, protocol_dir=None):
-        self.protocol = protocol
-        if isinstance(protocol, type):
-            self.protocol = protocol()
-            
-        assert isinstance(self.protocol, BaseProtocol), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
+        self._check_and_load_protocol(protocol, protocol_dir)
+        
         self.context = zmq.asyncio.Context()
         self.frontend = self.context.socket(zmq.ROUTER)
 
@@ -194,3 +194,19 @@ class SimpleRequestServer:
     def handle_query(self, request, response):
         """"""
         pass
+
+    def _check_and_load_protocol(self, protocol: BaseProtocol, protocol_dir: Path):
+        self.protocol_dir = protocol_dir
+
+        if protocol_dir is not None:
+            logger.debug(f"Loading protocol from {protocol_dir}")
+            self.protocol = BaseProtocol.load(protocol_dir)
+        else:
+            logger.debug(f"Using default protocol")
+            self.protocol = protocol
+
+        if isinstance(protocol, type):
+            self.protocol = protocol()
+            
+        assert isinstance(self.protocol, BaseProtocol), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
+        

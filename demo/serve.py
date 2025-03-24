@@ -4,8 +4,6 @@ import sys
 from pathlib import Path
 
 from dizzy.daemon import SimpleRequestServer
-from dizzy.daemon.abstract_protocol import DefaultProtocol
-from the_protocol import DefaultProtocol
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -13,7 +11,7 @@ logger = logging.getLogger(__name__)
 # Start the server with a custom data directory
 server = None
 try:
-    server = SimpleRequestServer(protocol=DefaultProtocol, port=7777, protocol_dir=Path(__file__).parent / "custom_data")
+    server = SimpleRequestServer(port=7777, protocol_dir=Path(__file__).parent / "custom_data")
     logger.info ("Server initialized")
     asyncio.run(server.run())
 except KeyboardInterrupt:

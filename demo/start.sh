@@ -21,11 +21,10 @@ cleanup() {
     fi
     exit 0
 }
-
-# Trap SIGINT (Ctrl+C) and call cleanup
 trap cleanup SIGINT
+trap cleanup SIGTERM
 
-#get pid
+# Start the server
 python serve.py &
 SERVE_CODE=$?
 SERVE_PID=$!
@@ -35,6 +34,7 @@ if [ $SERVE_CODE -ne 0 ]; then
 fi
 sleep 1
 
+# Start the client
 if ps -p $SERVE_PID > /dev/null; then
     echo "Server running, PID: $SERVE_PID"
     python request.py

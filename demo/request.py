@@ -6,7 +6,6 @@ import random
 from pathlib import Path
 
 from dizzy.daemon.client.asy import SimpleAsyncClient
-from the_protocol import DefaultProtocol
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -16,7 +15,7 @@ with open(Path(__file__).parent / "requests/new_project.json", "r") as f:
     NEW_PROJECT_REQUEST = json.load(f)
 
 
-client = SimpleAsyncClient(protocol=DefaultProtocol, port=7777)
+client = SimpleAsyncClient(protocol_dir=Path(__file__).parent / "custom_data", port=7777)
 
 
 async def continuous_send(client_id):

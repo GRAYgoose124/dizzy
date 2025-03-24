@@ -3,7 +3,7 @@ import zmq
 import zmq.asyncio
 import asyncio
 import logging
-
+from pathlib import Path
 logger = logging.getLogger(__name__)
 
 from ..abstract_protocol import BaseProtocol, DefaultProtocol
@@ -18,12 +18,8 @@ class SimpleAsyncClient:
 
         return cls._instance
 
-    def __init__(self, protocol: BaseProtocol = DefaultProtocol, address="localhost", port=5555):
-        # If protocol is a class, instantiate it
-        if isinstance(protocol, type):
-            protocol = protocol()
-        self.protocol = protocol
-        assert isinstance(self.protocol, BaseProtocol), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
+    def __init__(self, protocol: BaseProtocol = DefaultProtocol, address="localhost", port=5555, protocol_dir: Path = None):
+        self._check_and_load_protocol(protocol, protocol_dir)
 
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
@@ -97,3 +93,19 @@ class SimpleAsyncClient:
     def sync_request_task(self, service: str = "common", task: str = "echo"):
         request = self._build_task_request(service, task)
         return asyncio.run(self.send_request(request))
+
+    def _check_and_load_protocol(self, protocol: BaseProtocol, protocol_dir: Path):
+        self.protocol_dir = protocol_dir
+
+        if protocol_dir is not None:
+            logger.debug(f"Loading protocol from {protocol_dir}")
+            self.protocol = BaseProtocol.load(protocol_dir)
+        else:
+            logger.debug(f"Using default protocol")
+            self.protocol = protocol
+
+        if isinstance(protocol, type):
+            self.protocol = protocol()
+            
+        assert isinstance(self.protocol, BaseProtocol), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
+        
