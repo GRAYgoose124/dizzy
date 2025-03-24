@@ -6,7 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from ..abstract_protocol import BaseProtocol
+from ..abstract_protocol import BaseProtocol, DefaultProtocol
 
 class SimpleAsyncClient:
     _instance = None
@@ -18,8 +18,13 @@ class SimpleAsyncClient:
 
         return cls._instance
 
-    def __init__(self, protocol: BaseProtocol = BaseProtocol, address="localhost", port=5555):
+    def __init__(self, protocol: BaseProtocol = DefaultProtocol, address="localhost", port=5555):
+        # If protocol is a class, instantiate it
+        if isinstance(protocol, type):
+            protocol = protocol()
         self.protocol = protocol
+        assert isinstance(self.protocol, BaseProtocol), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
+
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(f"tcp://{address}:{port}")
@@ -44,9 +49,12 @@ class SimpleAsyncClient:
             self._process_response(request, response)
 
     async def send_request(self, request):
+        logger.debug(f"Sending request: {request}")
+        logger.debug(f"Protocol used: {self.protocol}")
         if not isinstance(request, self.protocol.Request):
             try:
-                _ = self.protocol.Request(**request)
+                _ = self.protocol.Request.model_validate(request)
+                logger.debug(f"Request is valid: {_}")
             except Exception as e:
                 logger.error(f"Invalid request: {request}")
                 raise e
@@ -54,11 +62,11 @@ class SimpleAsyncClient:
         self.socket.send_json(request)
         response = await self.socket.recv_multipart()
 
-        logger.debug(f"Received raw response: {response}")
-        message = response[0]
+        message = response[0].decode()
+        logger.debug(f"Received raw response: {message}")
 
-        return json.loads(message.decode())
-
+        return self.protocol.Response.model_validate_json(message)
+    
     def _process_response(self, request, response):
         request = self.protocol.Request(**request)
         response = self.protocol.Response(**response)

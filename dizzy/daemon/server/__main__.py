@@ -6,7 +6,7 @@ import zmq
 import zmq.asyncio
 
 from dizzy import EntityManager
-from ..abstract_protocol import BaseProtocol
+from ..abstract_protocol import BaseProtocol, DefaultProtocol
 from ..settings import SettingsManager
 
 logger = logging.getLogger(__name__)
@@ -32,13 +32,19 @@ class DaemonEntityManager(EntityManager):
 
 
 class SimpleRequestServer:
-    def __init__(self, protocol: BaseProtocol = BaseProtocol, address="*", port=5555, protocol_dir=None):
+    def __init__(self, protocol: BaseProtocol = DefaultProtocol, address="*", port=5555, protocol_dir=None):
         self.protocol = protocol
+        if isinstance(protocol, type):
+            self.protocol = protocol()
+            
+        assert isinstance(self.protocol, BaseProtocol), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
         self.context = zmq.asyncio.Context()
         self.frontend = self.context.socket(zmq.ROUTER)
         self.frontend.bind(f"tcp://{address}:{port}")
 
         self.entity_manager = DaemonEntityManager(protocol_dir)
+
+        self.clients = {}
 
     async def run(self):
         logger.debug("Server running...")
@@ -53,6 +59,9 @@ class SimpleRequestServer:
             except (zmq.error.ZMQError, asyncio.exceptions.CancelledError):
                 logger.debug("Server stopped.")
                 break
+            except Exception as e:
+                logger.exception(e)
+                continue
 
             logger.debug("About to handle request...")
             await self.handle_request(identity, message)
@@ -62,21 +71,39 @@ class SimpleRequestServer:
         self.context.term()
         self.running = False
 
+    def _generate_uuid(self):
+        return uuid.uuid4().hex
+    
     async def handle_request(self, identity: str, message: bytes):
         logger.debug(f"Received request: {message}")
+        if identity not in self.clients:
+            self.clients[identity] = {
+                "uuid": uuid.uuid4().hex,
+                "transactions": [],
+                "transaction_uuids": [],
+            }
+        this_client = self.clients[identity]["uuid"]
 
+        response = None
         try:
-            request = self.protocol.Request(**json.loads(message.decode()))
-            response = self.protocol.Response.from_request(identity, request)
-
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            response = self.protocol.Response.from_request(identity, None)
+            request = self.protocol.Request.model_validate_json(message.decode())
+            request.id = self._generate_uuid()
+            request.requester = this_client
+            response = self.protocol.Response.from_request(request)
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            response = self.protocol.Response.from_request(this_client, status="error")
             request = None
             logger.debug(f"Invalid JSON: {message}")
+            response.add_error("InvalidJSON", "Invalid JSON: " + str(e))
         except TypeError as e:
-            response = self.protocol.Response.from_request(identity, None)
+            response = self.protocol.Response.from_request(this_client, status="error")
             request = None
             logger.debug(f"Invalid request: {e}")
+            response.add_error("InvalidRequest", "Invalid request: " + str(e))
+
+        self.clients[identity]["transactions"].append((request, response))
+        self.clients[identity]["transaction_uuids"].append(request.id)
+        
 
         unhandled = True
         if request.entity is not None:
@@ -90,7 +117,13 @@ class SimpleRequestServer:
             "completed" if len(response.errors) == 0 else "finished_with_errors"
         )
 
-        response_data = response.model_dump_json().encode()
+        try:
+            logger.debug(f"Response: {response}")
+            response_data = response.model_dump_json().encode()
+        except Exception as e:
+            logger.error(f"Error serializing response: {e}")
+            response.add_error("SerializationError", str(e))
+            response_data = response.model_dump_json().encode()
 
         logger.debug(f"\n{request}\n\nreturned\n\n{response}\n")
         await self.frontend.send_multipart([identity, b"", response_data])
@@ -98,7 +131,7 @@ class SimpleRequestServer:
     def handle_entity_workflow(self, request, response):
         entity = request.entity
         workflow = request.workflow
-        step_options = request.options
+        step_options = request.step_options
 
         if not workflow:
             response.add_error("BadWorkflow", "Invalid JSON, no workflow")

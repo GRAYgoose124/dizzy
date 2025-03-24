@@ -4,25 +4,25 @@ from typing import Any, Dict, Generic, List, Literal, Optional, Type
 import uuid
 from dataclass_wizard import JSONWizard
 
-Status = Literal["created", "pending", "incomplete", "complete", "error"]
+Status = Literal["created", "pending", "incomplete", "complete", "error", "finished_with_errors", "cancelled", "stopped"]
 
 # TODO: Make id bytes
 class BaseRequest(BaseModel):
-    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    id: Optional[str] = None
     ctx: Dict[str, Any] = Field(default_factory=dict)
-    options: Dict[str, Any] = Field(default_factory=dict)
+    step_options: Dict[str, Any] = Field(default_factory=dict)
 
     class Config:
         populate_by_name = True
         extra = "allow"
 
     def set_option(self, key: str, value: Any):
-        self.options[key] = value
+        self.step_options[key] = value
     
     
 class BaseResponse[Rq: BaseRequest](BaseModel):
-    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
-    request: Optional[Rq] = None
+    id: Optional[str] = None
+    request: Rq
     requester: Optional[str] = None
 
     status: Status = "incomplete"
@@ -56,14 +56,33 @@ class BaseResponse[Rq: BaseRequest](BaseModel):
 
     @classmethod
     def from_request(cls, request: Rq, status: Status = "pending"):
-        self = cls()
-        self.request = request
-        self.status = status
+        self = cls(request=request, status=status)
         return self
 
-class BaseProtocol[Rq: BaseRequest, Rs: BaseResponse[BaseRequest]](BaseModel):
+class BaseProtocol[Rq: BaseRequest, Rs: BaseResponse[Rq]](BaseModel):
     Request: Type[Rq]
     Response: Type[Rs]
 
     class Config:
         arbitrary_types_allowed = True
+
+
+
+class DefaultRequest(BaseRequest):
+    entity: Optional[str] = None
+    workflow: Optional[str] = None
+    task: Optional[str] = None
+    service: Optional[str] = None
+
+    def __str__(self):
+        return f"Request(id={self.id}, workflow={self.workflow}, task={self.task}, step_options={self.step_options})"
+
+class DefaultResponse(BaseResponse[DefaultRequest]):
+    ctx: Dict[str, Any] = Field(default_factory=dict)
+
+    def update_ctx(self, ctx: dict):
+        self.ctx.update(ctx)
+
+class DefaultProtocol(BaseProtocol[DefaultRequest, DefaultResponse]):
+    Request: Type[DefaultRequest] = DefaultRequest
+    Response: Type[DefaultResponse] = DefaultResponse

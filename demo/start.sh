@@ -7,5 +7,9 @@ python serve.py & > /dev/null
 SERVE_PID=$!
 sleep 2
 
-python request.py
-kill $SERVE_PID
+if [ -n "$SERVE_PID" ]; then
+    python request.py
+    kill $SERVE_PID
+else
+    echo "Server not running, failed?"
+fi
