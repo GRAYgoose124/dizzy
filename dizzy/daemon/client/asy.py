@@ -18,7 +18,7 @@ class SimpleAsyncClient:
 
         return cls._instance
 
-    def __init__(self, protocol: BaseProtocol, address="localhost", port=5555):
+    def __init__(self, protocol: BaseProtocol = BaseProtocol, address="localhost", port=5555):
         self.protocol = protocol
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)

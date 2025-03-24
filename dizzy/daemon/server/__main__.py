@@ -32,7 +32,7 @@ class DaemonEntityManager(EntityManager):
 
 
 class SimpleRequestServer:
-    def __init__(self, protocol: BaseProtocol, address="*", port=5555, protocol_dir=None):
+    def __init__(self, protocol: BaseProtocol = BaseProtocol, address="*", port=5555, protocol_dir=None):
         self.protocol = protocol
         self.context = zmq.asyncio.Context()
         self.frontend = self.context.socket(zmq.ROUTER)

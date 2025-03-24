@@ -54,8 +54,12 @@ class BaseResponse[Rq: BaseRequest](BaseModel):
     def set_status(self, status: Status):
         self.status = status
 
-    def from_request(self, request: BaseRequest, status: Status = "pending"):
-        raise NotImplementedError("from_request must be implemented in a subclass.")
+    @classmethod
+    def from_request(cls, request: Rq, status: Status = "pending"):
+        self = cls()
+        self.request = request
+        self.status = status
+        return self
 
 class BaseProtocol[Rq: BaseRequest, Rs: BaseResponse[BaseRequest]](BaseModel):
     Request: Type[Rq]

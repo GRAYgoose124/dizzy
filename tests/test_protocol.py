@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from dizzy.daemon import all_entities, DaemonEntityManager, Request, Response
+from dizzy.daemon import all_entities, DaemonEntityManager, BaseRequest, BaseResponse
 from dizzy.utils import DependencyError
 
 
@@ -39,16 +39,17 @@ class TestProtocol:
         assert all(e in ["entity_info", "service_info"] for e in task.requested_actions)
 
     def test_request_response(self):
-        request = Request(
+        request = BaseRequest(
             entity="einz",
             workflow="einzy",
             ctx={"name": "dizzy", "age": 42},
         )
 
-        response = Response.from_request("requester", request)
+        response = BaseResponse.from_request(request)
+        response.requester = "requester"
 
         assert response.requester == "requester"
-        assert response.ctx == {"name": "dizzy", "age": 42}
+        assert response.request.ctx == {"name": "dizzy", "age": 42}
 
         response.set_result({"name": "dizzy", "age": 42})
         response.set_status("completed")
