@@ -1,3 +1,14 @@
+""" Deprecated server / client.
+
+```bash
+$ DIZZY_DATA_ROOT="$(pwd)/dizzy/default_data" python -m dizzy.daemon server
+```
+
+```bash
+$ DIZZY_DATA_ROOT="$(pwd)/dizzy/default_data" python -m dizzy.daemon client
+```
+
+"""
 import argparse
 import json
 import logging
@@ -6,17 +17,14 @@ import sys
 import zmq
 import asyncio
 
-from . import Server, CLICient, SettingsManager
-from ..utils import load_dizzy_proto_class
+from . import SimpleRequestServer, SimpleCLIClient, SettingsManager
+from .abstract_protocol import BaseProtocol
 
 data_root = SettingsManager(write_to_disk=True).data_root
 
-DizzyProtocol = load_dizzy_proto_class()
-
-
 async def server(port=5555):
     try:
-        server = Server(DizzyProtocol, port=port)
+        server = SimpleRequestServer(protocol_dir=data_root, port=port)
     except zmq.error.ZMQError as e:
         print(e)
         sys.exit(1)
@@ -28,7 +36,7 @@ async def server(port=5555):
 
 
 def client(address="localhost", port=5555):
-    client = CLICient(address=address, port=port)
+    client = SimpleCLIClient(address=address, port=port)
 
     try:
         client.run()

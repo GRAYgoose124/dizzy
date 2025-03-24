@@ -1,5 +1,5 @@
 from pydantic import Field, validator
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Type
 
 from dizzy.daemon.abstract_protocol import (
     BaseRequest,
@@ -41,4 +41,6 @@ class Response(BaseResponse[Request]):
         )
 
 
-DizzyProtocol = BaseProtocol[Request, Response](Request=Request, Response=Response)
+class DizzyProtocol(BaseProtocol[Request, Response]):
+    Request: Type[Request] = Request
+    Response: Type[Response] = Response

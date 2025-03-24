@@ -41,3 +41,5 @@ if ps -p $SERVE_PID > /dev/null; then
 else
     echo "Server no longer running, failed?"
 fi
+
+echo "Success!"
