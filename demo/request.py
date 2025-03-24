@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import sys
+import random
 from pathlib import Path
 
 from dizzy.daemon.client.asy import SimpleAsyncClient
@@ -18,12 +19,14 @@ with open(Path(__file__).parent / "requests/new_project.json", "r") as f:
 client = SimpleAsyncClient(protocol=DefaultProtocol, port=7777)
 
 
-async def continuous_send():
-    await asyncio.sleep(1)
+async def continuous_send(client_id):
+    await asyncio.sleep(random.uniform(0, 1))
+    # suppress logging here
+    logger.info(f"Client {client_id} is about to start sending requests")
+    logger.disabled = True
     while True:
-        logger.info("Sending new project request")
         await client.send_request(NEW_PROJECT_REQUEST)
-        await asyncio.sleep(5)
+        await asyncio.sleep(random.uniform(1, 2))
 
 
 async def delayed_send():
@@ -33,9 +36,10 @@ async def delayed_send():
 
 
 async def main():
+    n_continuous_clients = 10
     await asyncio.gather(
         client.run(),
-        continuous_send(),
+        *[continuous_send(i) for i in range(n_continuous_clients)],
         delayed_send(),
     )
 
