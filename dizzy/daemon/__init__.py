@@ -1,10 +1,8 @@
-from .server.__main__ import SimpleRequestServer as Server
-from .server.__main__ import DaemonEntityManager
-
-from .client.cli import SimpleCLIClient as CLICient
+from .server.__main__ import SimpleRequestServer, DaemonEntityManager
+from .client.cli import SimpleCLIClient
 from .client.asy import SimpleAsyncClient
 
-from .abstract_protocol import BaseRequest, BaseResponse
+from .abstract_protocol import BaseRequest, BaseResponse, BaseProtocol
 
 from .settings import SettingsManager
 
@@ -17,10 +15,13 @@ except Exception as e:
 
 
 __all__ = [
-    "Server",
-    "CLICient",
+    "SimpleRequestServer",
+    "SimpleCLIClient",
     "SimpleAsyncClient",
+
     "DaemonEntityManager",
+
     "BaseRequest",
     "BaseResponse",
+    "BaseProtocol",
 ]

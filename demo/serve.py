@@ -1,14 +1,28 @@
-""" A simple demo of the dizzy package. """
-
 import logging
-
 import asyncio
+import sys
 from pathlib import Path
-from dizzy.daemon import Server
+
+from dizzy.daemon import SimpleRequestServer
 from dizzy.daemon.abstract_protocol import DefaultProtocol
+from the_protocol import DefaultProtocol
 
 logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Start the server with a custom data directory
-server = Server(protocol=DefaultProtocol, port=7777, protocol_dir=Path(__file__).parent / "custom_data")
-asyncio.run(server.run())
+server = None
+try:
+    server = SimpleRequestServer(protocol=DefaultProtocol, port=7777, protocol_dir=Path(__file__).parent / "custom_data")
+    logger.info ("Server initialized")
+    asyncio.run(server.run())
+except KeyboardInterrupt:
+    logger.info("Keyboard interrupt")
+except Exception as e:
+    logger.exception(e)
+    logger.error("Server failed to start")
+    sys.exit(1)
+finally:
+    if server:
+        logger.info("Stopping server")
+        server.stop()

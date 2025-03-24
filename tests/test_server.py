@@ -1,7 +1,7 @@
 import asyncio
 import os
 import time
-from dizzy.daemon import Server
+from dizzy.daemon import SimpleRequestServer
 from dizzy.daemon.client.asy import SimpleAsyncClient
 import logging
 import pytest
@@ -21,15 +21,15 @@ def busy_client():
 
 
 def start_server():
-    from dizzy.daemon import Server
+    from dizzy.daemon import SimpleRequestServer
 
-    server = Server(port=7777)
+    server = SimpleRequestServer(port=7777)
     server.run()
 
 
 class TestServer:
     def setup_method(self):
-        self.server = Server(port=7777)
+        self.server = SimpleRequestServer(port=7777)
         self.client = SimpleAsyncClient(port=7777)
 
         # start the async server in a separate thread

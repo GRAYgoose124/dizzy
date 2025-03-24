@@ -40,7 +40,12 @@ class SimpleRequestServer:
         assert isinstance(self.protocol, BaseProtocol), f"Protocol must be a subclass of BaseProtocol, got {type(self.protocol)}"
         self.context = zmq.asyncio.Context()
         self.frontend = self.context.socket(zmq.ROUTER)
-        self.frontend.bind(f"tcp://{address}:{port}")
+
+        try:
+            self.frontend.bind(f"tcp://{address}:{port}")
+        except zmq.error.ZMQError as e:
+            logger.error(f"Error binding to {address}:{port}: {e}")
+            raise RuntimeError(f"Error binding to {address}:{port}: {e}")
 
         self.entity_manager = DaemonEntityManager(protocol_dir)
 
@@ -57,6 +62,9 @@ class SimpleRequestServer:
             try:
                 [identity, _, message] = await self.frontend.recv_multipart()
             except (zmq.error.ZMQError, asyncio.exceptions.CancelledError):
+                logger.debug("Server stopped.")
+                break
+            except KeyboardInterrupt:
                 logger.debug("Server stopped.")
                 break
             except Exception as e:
@@ -125,7 +133,7 @@ class SimpleRequestServer:
             response.add_error("SerializationError", str(e))
             response_data = response.model_dump_json().encode()
 
-        logger.debug(f"\n{request}\n\nreturned\n\n{response}\n")
+        logger.debug(f"\n\n{request.model_dump_json(indent=2)}\n\nreturned\n\n{response.model_dump_json(indent=2)}\n")
         await self.frontend.send_multipart([identity, b"", response_data])
 
     def handle_entity_workflow(self, request, response):
